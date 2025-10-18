@@ -16,6 +16,7 @@ export interface IShipment extends Document {
   scale_overwrite?: boolean;
   is_duplicate_check_applied?: boolean;
   merged_to_shipment_uid?: string;
+  merged_from_shipment_uid?: string;
   merged_at?: Date;
   merged_by_uid?: string;
   facility?: mongoose.Types.ObjectId;
@@ -80,6 +81,9 @@ const ShipmentSchema = new Schema<IShipment>({
     default: false
   },
   merged_to_shipment_uid: {
+    type: String
+  },
+  merged_from_shipment_uid: {
     type: String
   },
   merged_at: {

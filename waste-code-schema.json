@@ -1,0 +1,102 @@
+{
+  "properties": {
+    "uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Uid"
+    },
+    "code": {
+      "type": "string",
+      "title": "Code"
+    },
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Description"
+    },
+    "color_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Color Code",
+      "default": "#0000FF"
+    },
+    "code_with_spaces": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Code With Spaces"
+    },
+    "calorific_value_min": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Calorific Value Min"
+    },
+    "calorific_value_max": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Calorific Value Max"
+    },
+    "calorific_value_comment": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Calorific Value Comment"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Source"
+    }
+  },
+  "type": "object",
+  "required": [
+    "uid",
+    "code",
+    "name"
+  ],
+  "title": "WasteCodeBaseResponse"
+}

@@ -1,0 +1,282 @@
+{
+  "properties": {
+    "facility_uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Facility Uid"
+    },
+    "client_uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Client Uid"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Title"
+    },
+    "external_reference_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "External Reference Id"
+    },
+    "external_waste_code_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "External Waste Code Id"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Source"
+    },
+    "start_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Start Date"
+    },
+    "end_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End Date"
+    },
+    "tonnage_min": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tonnage Min"
+    },
+    "tonnage_max": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tonnage Max"
+    },
+    "tonnage_actual": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tonnage Actual"
+    },
+    "uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Uid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+    },
+    "created_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Created By Uid"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Updated At"
+    },
+    "updated_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Updated By Uid"
+    },
+    "deleted_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Deleted At"
+    },
+    "deleted_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Deleted By Uid"
+    },
+    "migration_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Migration Id"
+    },
+    "client": {
+      "$ref": "#/components/schemas/ClientBaseResponse"
+    },
+    "facility": {
+      "$ref": "#/components/schemas/FacilityBaseResponse-Output"
+    },
+    "importer": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ImporterBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "exporter": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ExporterBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "carrier": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/CarrierBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waste_generator": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/WasteGeneratorBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waste_code": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/WasteCodeBaseResponse"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waste_property_customized": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/WastePropertyBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waste_property_original": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/WastePropertyBaseResponse-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "required": [
+    "facility_uid",
+    "client_uid",
+    "uid",
+    "created_at",
+    "client",
+    "facility"
+  ],
+  "title": "ContractResponse"
+}

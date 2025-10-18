@@ -1,9 +1,16 @@
 import mongoose from 'mongoose';
+import { faker } from '@faker-js/faker';
 import { connectToDatabase, disconnectFromDatabase } from './connection';
 import { Facility } from '../models/Facility';
 import { Shipment } from '../models/Shipment';
 import { Contaminant } from '../models/Contaminant';
 import { Inspection } from '../models/Inspection';
+import { Contract } from '../models/Contract';
+import { WasteCode } from '../models/WasteCode';
+import { WasteGenerator } from '../models/WasteGenerator';
+import { ShipmentWasteComposition, SEVERITY_ENUM } from '../models/ShipmentWasteComposition';
+import { Bunker } from '../models/Bunker';
+import { WasteProperty } from '../models/WasteProperty';
 
 async function seed() {
   try {
@@ -15,46 +22,52 @@ async function seed() {
     await Shipment.deleteMany({});
     await Contaminant.deleteMany({});
     await Inspection.deleteMany({});
+    await Contract.deleteMany({});
+    await WasteCode.deleteMany({});
+    await WasteGenerator.deleteMany({});
+    await ShipmentWasteComposition.deleteMany({});
+    await Bunker.deleteMany({});
+    await WasteProperty.deleteMany({});
 
     console.log('Creating facilities...');
     const facilities = await Facility.insertMany([
       {
-        uid: 'facility-001',
-        name: 'Central Waste Processing Facility',
-        address: '123 Industrial Blvd',
-        city: 'Berlin',
-        country: 'Germany',
-        region: 'Brandenburg',
-        postal_code: '10115',
-        email: 'contact@central-waste.de',
-        phone: '+49-30-12345678',
-        door_count: 10,
-        number_of_doors: 10,
-        grid_width: 200,
-        grid_depth: 100,
-        disposal_number: 'DE-001',
-        rules_explosive_risk_check: true,
-        rules_item_size_limit: true,
-        rules_waste_item_rule_check: true,
+        uid: faker.string.uuid(),
+        name: faker.company.name() + ' Waste Processing Facility',
+        address: faker.location.streetAddress(),
+        city: faker.location.city(),
+        country: faker.location.country(),
+        region: faker.location.state(),
+        postal_code: faker.location.zipCode(),
+        email: faker.internet.email(),
+        phone: faker.phone.number(),
+        door_count: faker.number.int({ min: 5, max: 20 }),
+        number_of_doors: faker.number.int({ min: 5, max: 20 }),
+        grid_width: faker.number.int({ min: 100, max: 500 }),
+        grid_depth: faker.number.int({ min: 50, max: 200 }),
+        disposal_number: faker.string.alphanumeric({ length: 8, casing: 'upper' }),
+        rules_explosive_risk_check: faker.datatype.boolean(),
+        rules_item_size_limit: faker.datatype.boolean(),
+        rules_waste_item_rule_check: faker.datatype.boolean(),
         client: new mongoose.Types.ObjectId(),
       },
       {
-        uid: 'facility-002',
-        name: 'North Sorting Center',
-        address: '456 Recycling Way',
-        city: 'Hamburg',
-        country: 'Germany',
-        region: 'Hamburg',
-        postal_code: '20095',
-        email: 'info@north-sorting.de',
-        phone: '+49-40-98765432',
-        door_count: 8,
-        number_of_doors: 8,
-        grid_width: 150,
-        grid_depth: 80,
-        disposal_number: 'DE-002',
-        rules_explosive_risk_check: true,
-        rules_singular_delivery_check: true,
+        uid: faker.string.uuid(),
+        name: faker.company.name() + ' Sorting Center',
+        address: faker.location.streetAddress(),
+        city: faker.location.city(),
+        country: faker.location.country(),
+        region: faker.location.state(),
+        postal_code: faker.location.zipCode(),
+        email: faker.internet.email(),
+        phone: faker.phone.number(),
+        door_count: faker.number.int({ min: 5, max: 20 }),
+        number_of_doors: faker.number.int({ min: 5, max: 20 }),
+        grid_width: faker.number.int({ min: 100, max: 500 }),
+        grid_depth: faker.number.int({ min: 50, max: 200 }),
+        disposal_number: faker.string.alphanumeric({ length: 8, casing: 'upper' }),
+        rules_explosive_risk_check: faker.datatype.boolean(),
+        rules_singular_delivery_check: faker.datatype.boolean(),
         client: new mongoose.Types.ObjectId(),
       },
     ]);
@@ -62,19 +75,19 @@ async function seed() {
     console.log('Creating shipments...');
     const shipments = await Shipment.insertMany([
       {
-        uid: 'shipment-001',
-        client_uid: 'client-001',
-        license_plate: 'B-WM-1234',
-        entry_timestamp: new Date('2025-01-18T08:00:00Z'),
-        entry_weight: 15000,
-        exit_timestamp: new Date('2025-01-18T09:30:00Z'),
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        license_plate: faker.vehicle.vrm(),
+        entry_timestamp: faker.date.recent({ days: 30 }),
+        entry_weight: faker.number.int({ min: 5000, max: 25000 }),
+        exit_timestamp: faker.date.recent({ days: 30 }),
         exit_weight: 0,
-        gate_number: 1,
-        shipment_datetime: new Date('2025-01-18T08:00:00Z'),
-        notes: 'Mixed waste delivery from construction site',
-        source: 'Construction Site Alpha',
-        scale_overwrite: false,
-        is_duplicate_check_applied: true,
+        gate_number: faker.number.int({ min: 1, max: 10 }),
+        shipment_datetime: faker.date.recent({ days: 30 }),
+        notes: faker.lorem.sentence(),
+        source: faker.company.name(),
+        scale_overwrite: faker.datatype.boolean(),
+        is_duplicate_check_applied: faker.datatype.boolean(),
         facility: facilities[0]._id,
       },
       {
@@ -234,11 +247,384 @@ async function seed() {
       },
     ]);
 
+    console.log('Creating waste codes...');
+    const wasteCodes = await WasteCode.insertMany([
+      {
+        uid: 'waste-code-001',
+        code: '20 03 01',
+        name: 'Mixed Municipal Waste',
+        description: 'Mixed waste from households and similar establishments',
+        color_code: '#FF6B6B',
+        code_with_spaces: '20 03 01',
+        calorific_value_min: 8.0,
+        calorific_value_max: 12.0,
+        calorific_value_comment: 'Typical range for mixed municipal waste',
+        source: 'European Waste Catalogue',
+      },
+      {
+        uid: 'waste-code-002',
+        code: '15 01 02',
+        name: 'Plastic Packaging',
+        description: 'Plastic packaging waste excluding containers',
+        color_code: '#4ECDC4',
+        code_with_spaces: '15 01 02',
+        calorific_value_min: 35.0,
+        calorific_value_max: 45.0,
+        calorific_value_comment: 'High calorific value for plastic waste',
+        source: 'European Waste Catalogue',
+      },
+      {
+        uid: 'waste-code-003',
+        code: '17 04 05',
+        name: 'Iron and Steel',
+        description: 'Iron and steel scrap metal',
+        color_code: '#45B7D1',
+        code_with_spaces: '17 04 05',
+        calorific_value_min: 0.0,
+        calorific_value_max: 1.0,
+        calorific_value_comment: 'Minimal calorific value for metal waste',
+        source: 'European Waste Catalogue',
+      },
+    ]);
+
+    console.log('Creating waste generators...');
+    const wasteGenerators = await WasteGenerator.insertMany([
+      {
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        name: faker.company.name() + ' Construction Site',
+        external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
+        region: faker.location.state(),
+        // Contact information
+        phone: faker.phone.number(),
+        telephone: faker.phone.number(),
+        email: faker.internet.email(),
+        // Address information
+        address: faker.location.streetAddress(),
+        street_address: faker.location.street(),
+        city: faker.location.city(),
+        postal_code: faker.location.zipCode(),
+        zip_code: faker.location.zipCode(),
+        country: faker.location.country(),
+        address_notes: faker.lorem.sentence(),
+        // Other fields
+        source: 'Construction',
+        notes: faker.lorem.paragraph(),
+        client: new mongoose.Types.ObjectId(),
+      },
+      {
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        name: faker.company.name() + ' Industrial Park',
+        external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
+        region: faker.location.state(),
+        // Contact information
+        phone: faker.phone.number(),
+        telephone: faker.phone.number(),
+        email: faker.internet.email(),
+        // Address information
+        address: faker.location.streetAddress(),
+        street_address: faker.location.street(),
+        city: faker.location.city(),
+        postal_code: faker.location.zipCode(),
+        zip_code: faker.location.zipCode(),
+        country: faker.location.country(),
+        address_notes: faker.lorem.sentence(),
+        // Other fields
+        source: 'Industrial',
+        notes: faker.lorem.paragraph(),
+        client: new mongoose.Types.ObjectId(),
+      },
+      {
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        name: faker.company.name() + ' Scrap Yard',
+        external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
+        region: faker.location.state(),
+        // Contact information
+        phone: faker.phone.number(),
+        telephone: faker.phone.number(),
+        email: faker.internet.email(),
+        // Address information
+        address: faker.location.streetAddress(),
+        street_address: faker.location.street(),
+        city: faker.location.city(),
+        postal_code: faker.location.zipCode(),
+        zip_code: faker.location.zipCode(),
+        country: faker.location.country(),
+        address_notes: faker.lorem.sentence(),
+        // Other fields
+        source: 'Recycling',
+        notes: faker.lorem.paragraph(),
+        client: new mongoose.Types.ObjectId(),
+      },
+    ]);
+
+    console.log('Creating contracts...');
+    const contracts = await Contract.insertMany([
+      {
+        uid: 'contract-001',
+        facility_uid: 'facility-001',
+        client_uid: 'client-001',
+        title: 'Municipal Waste Processing Contract 2025',
+        external_reference_id: 'CONTRACT-2025-001',
+        external_waste_code_id: '20 03 01',
+        start_date: new Date('2025-01-01T00:00:00Z'),
+        end_date: new Date('2025-12-31T23:59:59Z'),
+        tonnage_min: 1000,
+        tonnage_max: 5000,
+        tonnage_actual: 1250,
+        source: 'Contract Management System',
+        facility: facilities[0]._id,
+        client: facilities[0]._id, // Simplified for seed data
+        waste_generator: wasteGenerators[0]._id,
+        waste_code: wasteCodes[0]._id,
+      },
+      {
+        uid: 'contract-002',
+        facility_uid: 'facility-002',
+        client_uid: 'client-001',
+        title: 'Plastic Waste Processing Agreement',
+        external_reference_id: 'CONTRACT-2025-002',
+        external_waste_code_id: '15 01 02',
+        start_date: new Date('2025-01-01T00:00:00Z'),
+        end_date: new Date('2025-06-30T23:59:59Z'),
+        tonnage_min: 500,
+        tonnage_max: 2000,
+        tonnage_actual: 750,
+        source: 'Contract Management System',
+        facility: facilities[1]._id,
+        client: facilities[1]._id,
+        waste_generator: wasteGenerators[1]._id,
+        waste_code: wasteCodes[1]._id,
+      },
+    ]);
+
+    console.log('Creating bunkers...');
+    const bunkers = await Bunker.insertMany([
+      {
+        uid: 'bunker-001',
+        name: 'Bunker A - Mixed Waste',
+        facility: facilities[0]._id,
+        capacity: 1000,
+        current_load: 250,
+        waste_type: 'Mixed Municipal Waste',
+        status: 'active',
+      },
+      {
+        uid: 'bunker-002',
+        name: 'Bunker B - Plastic Waste',
+        facility: facilities[1]._id,
+        capacity: 800,
+        current_load: 150,
+        waste_type: 'Plastic Packaging',
+        status: 'active',
+      },
+      {
+        uid: 'bunker-003',
+        name: 'Bunker C - Metal Waste',
+        facility: facilities[0]._id,
+        capacity: 1200,
+        current_load: 400,
+        waste_type: 'Iron and Steel',
+        status: 'active',
+      },
+    ]);
+
+    console.log('Creating waste properties...');
+    const wasteProperties = await WasteProperty.insertMany([
+      {
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        contract_uid: contracts[0].uid,
+        contract: contracts[0]._id,
+        waste_description: 'Mixed municipal waste from residential areas',
+        waste_amount: faker.number.float({ min: 100, max: 5000, fractionDigits: 2 }),
+        waste_designation: 'Non-hazardous',
+        consistency: ['Solid', 'Mixed'],
+        type_of_waste: ['Municipal', 'Organic', 'Recyclable'],
+        processing_steps: ['Sorting', 'Separation', 'Incineration'],
+        min_calorific_value: faker.number.float({ min: 8, max: 10, fractionDigits: 1 }),
+        calorific_value: faker.number.float({ min: 10, max: 12, fractionDigits: 1 }),
+        biogenic_part: faker.number.float({ min: 60, max: 70, fractionDigits: 1 }),
+        plastic_content: faker.number.float({ min: 10, max: 20, fractionDigits: 1 }),
+        edge_length: faker.number.float({ min: 50, max: 300, fractionDigits: 0 }),
+        water: faker.number.float({ min: 15, max: 25, fractionDigits: 1 }),
+        ash: faker.number.float({ min: 10, max: 20, fractionDigits: 1 }),
+        fluorine: faker.number.float({ min: 10, max: 50, fractionDigits: 1 }),
+        sulfur: faker.number.float({ min: 50, max: 200, fractionDigits: 1 }),
+        chlorine: faker.number.float({ min: 100, max: 500, fractionDigits: 1 }),
+        flue_gas: faker.number.float({ min: 1000, max: 3000, fractionDigits: 0 }),
+        mercury: faker.number.float({ min: 0.1, max: 1.0, fractionDigits: 2 }),
+        cadmium: faker.number.float({ min: 0.5, max: 2.0, fractionDigits: 2 }),
+        lead: faker.number.float({ min: 5, max: 20, fractionDigits: 1 }),
+        copper: faker.number.float({ min: 50, max: 200, fractionDigits: 1 }),
+        zinc: faker.number.float({ min: 100, max: 500, fractionDigits: 1 }),
+        phosphate: faker.number.float({ min: 10, max: 50, fractionDigits: 1 }),
+        comments: faker.lorem.sentence(),
+      },
+      {
+        uid: faker.string.uuid(),
+        client_uid: faker.string.uuid(),
+        contract_uid: contracts[1].uid,
+        contract: contracts[1]._id,
+        waste_description: 'Plastic packaging waste from industrial sources',
+        waste_amount: faker.number.float({ min: 100, max: 2000, fractionDigits: 2 }),
+        waste_designation: 'Non-hazardous',
+        consistency: ['Solid', 'Plastic'],
+        type_of_waste: ['Industrial', 'Packaging', 'Recyclable'],
+        processing_steps: ['Sorting', 'Shredding', 'Recycling'],
+        min_calorific_value: faker.number.float({ min: 35, max: 38, fractionDigits: 1 }),
+        calorific_value: faker.number.float({ min: 38, max: 42, fractionDigits: 1 }),
+        biogenic_part: faker.number.float({ min: 0, max: 10, fractionDigits: 1 }),
+        plastic_content: faker.number.float({ min: 80, max: 95, fractionDigits: 1 }),
+        edge_length: faker.number.float({ min: 20, max: 150, fractionDigits: 0 }),
+        water: faker.number.float({ min: 1, max: 5, fractionDigits: 1 }),
+        ash: faker.number.float({ min: 2, max: 8, fractionDigits: 1 }),
+        fluorine: faker.number.float({ min: 5, max: 30, fractionDigits: 1 }),
+        sulfur: faker.number.float({ min: 20, max: 100, fractionDigits: 1 }),
+        chlorine: faker.number.float({ min: 500, max: 2000, fractionDigits: 1 }),
+        flue_gas: faker.number.float({ min: 2000, max: 5000, fractionDigits: 0 }),
+        mercury: faker.number.float({ min: 0.05, max: 0.5, fractionDigits: 2 }),
+        cadmium: faker.number.float({ min: 0.2, max: 1.0, fractionDigits: 2 }),
+        lead: faker.number.float({ min: 2, max: 10, fractionDigits: 1 }),
+        copper: faker.number.float({ min: 20, max: 100, fractionDigits: 1 }),
+        zinc: faker.number.float({ min: 50, max: 200, fractionDigits: 1 }),
+        phosphate: faker.number.float({ min: 5, max: 20, fractionDigits: 1 }),
+        comments: faker.lorem.sentence(),
+      },
+    ]);
+
+    console.log('Creating shipment waste compositions...');
+    await ShipmentWasteComposition.insertMany([
+      {
+        uid: 'composition-001',
+        client_uid: 'client-001',
+        shipment: shipments[0]._id,
+        facility: facilities[0]._id,
+        bunker: bunkers[0]._id,
+        moisture_level: SEVERITY_ENUM.MEDIUM,
+        moisture_comment: 'Moderate moisture content detected',
+        dust_load_level: SEVERITY_ENUM.LOW,
+        dust_load_comment: 'Low dust levels',
+        calorific_value_min: 8.5,
+        calorific_value_max: 11.5,
+        calorific_value_comment: 'Within expected range for mixed waste',
+        biogenic_content_percentage: 65.0,
+        biogenic_content_comment: 'High biogenic content from organic waste',
+        sulfur_dioxide_risk: SEVERITY_ENUM.LOW,
+        sulfur_dioxide_comment: 'Low SO2 emission risk',
+        hydrochloric_acid_risk: SEVERITY_ENUM.LOW,
+        hydrochloric_acid_comment: 'Low HCl emission risk',
+        mono_charge_detected: false,
+        mono_charge_comment: 'No mono charge detected',
+        likely_ewc_code: '20 03 01',
+        likely_ewc_description: 'Mixed Municipal Waste',
+        likely_ewc_comment: 'Confirmed classification',
+        // Material composition - Mixed Municipal Waste
+        concrete_stones: faker.number.float({ min: 0, max: 10, fractionDigits: 1 }),
+        concrete_stones_comment: faker.lorem.sentence(),
+        glass: faker.number.float({ min: 5, max: 15, fractionDigits: 1 }),
+        glass_comment: faker.lorem.sentence(),
+        paper_moist: faker.number.float({ min: 20, max: 35, fractionDigits: 1 }),
+        paper_moist_comment: faker.lorem.sentence(),
+        msw_mixed: faker.number.float({ min: 30, max: 45, fractionDigits: 1 }),
+        msw_mixed_comment: faker.lorem.sentence(),
+        hard_plastics: faker.number.float({ min: 8, max: 18, fractionDigits: 1 }),
+        hard_plastics_comment: faker.lorem.sentence(),
+        textiles_clothing: faker.number.float({ min: 5, max: 12, fractionDigits: 1 }),
+        textiles_clothing_comment: faker.lorem.sentence(),
+        aluminium_shavings_comb: faker.number.float({ min: 0.5, max: 3, fractionDigits: 1 }),
+        aluminium_shavings_comb_comment: faker.lorem.sentence(),
+        iron_fe: faker.number.float({ min: 1, max: 4, fractionDigits: 1 }),
+        iron_fe_comment: faker.lorem.sentence(),
+        gcp_image_path: faker.image.url(),
+      },
+      {
+        uid: 'composition-002',
+        client_uid: 'client-001',
+        shipment: shipments[1]._id,
+        facility: facilities[1]._id,
+        bunker: bunkers[1]._id,
+        moisture_level: SEVERITY_ENUM.LOW,
+        moisture_comment: 'Low moisture content for plastic waste',
+        dust_load_level: SEVERITY_ENUM.NONE,
+        dust_load_comment: 'No significant dust detected',
+        calorific_value_min: 38.0,
+        calorific_value_max: 42.0,
+        calorific_value_comment: 'High calorific value typical for plastics',
+        biogenic_content_percentage: 5.0,
+        biogenic_content_comment: 'Very low biogenic content',
+        sulfur_dioxide_risk: SEVERITY_ENUM.MEDIUM,
+        sulfur_dioxide_comment: 'Medium SO2 risk from plastic additives',
+        hydrochloric_acid_risk: SEVERITY_ENUM.HIGH,
+        hydrochloric_acid_comment: 'High HCl risk from PVC content',
+        mono_charge_detected: true,
+        mono_charge_comment: 'Mono charge detected - primarily PET',
+        likely_ewc_code: '15 01 02',
+        likely_ewc_description: 'Plastic Packaging',
+        likely_ewc_comment: 'Confirmed plastic packaging waste',
+        // Material composition - Plastic Waste
+        hard_plastics: faker.number.float({ min: 35, max: 55, fractionDigits: 1 }),
+        hard_plastics_comment: faker.lorem.sentence(),
+        lightweight_packaging_lwp: faker.number.float({ min: 20, max: 35, fractionDigits: 1 }),
+        lightweight_packaging_lwp_comment: faker.lorem.sentence(),
+        composite_packaging: faker.number.float({ min: 10, max: 20, fractionDigits: 1 }),
+        composite_packaging_comment: faker.lorem.sentence(),
+        pvc_items: faker.number.float({ min: 5, max: 15, fractionDigits: 1 }),
+        pvc_items_comment: faker.lorem.sentence(),
+        films_dirty_pe_pp: faker.number.float({ min: 3, max: 10, fractionDigits: 1 }),
+        films_dirty_pe_pp_comment: faker.lorem.sentence(),
+        gcp_image_path: faker.image.url(),
+      },
+      {
+        uid: 'composition-003',
+        client_uid: 'client-002',
+        shipment: shipments[2]._id,
+        facility: facilities[0]._id,
+        bunker: bunkers[2]._id,
+        moisture_level: SEVERITY_ENUM.LOW,
+        moisture_comment: 'Very low moisture content',
+        dust_load_level: SEVERITY_ENUM.MEDIUM,
+        dust_load_comment: 'Moderate dust from metal processing',
+        calorific_value_min: 0.5,
+        calorific_value_max: 1.0,
+        calorific_value_comment: 'Minimal calorific value for metal waste',
+        biogenic_content_percentage: 0.0,
+        biogenic_content_comment: 'No biogenic content in metal waste',
+        sulfur_dioxide_risk: SEVERITY_ENUM.NONE,
+        sulfur_dioxide_comment: 'No SO2 emission risk from metal',
+        hydrochloric_acid_risk: SEVERITY_ENUM.NONE,
+        hydrochloric_acid_comment: 'No HCl emission risk from metal',
+        mono_charge_detected: false,
+        mono_charge_comment: 'Mixed metal types detected',
+        likely_ewc_code: '17 04 05',
+        likely_ewc_description: 'Iron and Steel',
+        likely_ewc_comment: 'Confirmed metal scrap waste',
+        // Material composition - Metal Waste
+        iron_fe: faker.number.float({ min: 60, max: 85, fractionDigits: 1 }),
+        iron_fe_comment: faker.lorem.sentence(),
+        aluminium_shavings_comb: faker.number.float({ min: 10, max: 25, fractionDigits: 1 }),
+        aluminium_shavings_comb_comment: faker.lorem.sentence(),
+        copper_cu: faker.number.float({ min: 5, max: 12, fractionDigits: 1 }),
+        copper_cu_comment: faker.lorem.sentence(),
+        vehicle_parts_pipes: faker.number.float({ min: 1, max: 5, fractionDigits: 1 }),
+        vehicle_parts_pipes_comment: faker.lorem.sentence(),
+        gcp_image_path: faker.image.url(),
+      },
+    ]);
+
     console.log('✅ Database seeded successfully!');
     console.log(`   - ${facilities.length} facilities`);
     console.log(`   - ${shipments.length} shipments`);
     console.log(`   - 2 contaminants`);
     console.log(`   - 3 inspections`);
+    console.log(`   - ${wasteCodes.length} waste codes`);
+    console.log(`   - ${wasteGenerators.length} waste generators`);
+    console.log(`   - ${contracts.length} contracts`);
+    console.log(`   - ${bunkers.length} bunkers`);
+    console.log(`   - ${wasteProperties.length} waste properties`);
+    console.log(`   - 3 shipment waste compositions`);
 
     await disconnectFromDatabase();
   } catch (error) {

@@ -1,0 +1,122 @@
+{
+  "properties": {
+    "uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Uid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+    },
+    "created_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Created By Uid"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Updated At"
+    },
+    "updated_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Updated By Uid"
+    },
+    "deleted_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Deleted At"
+    },
+    "deleted_by_uid": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Deleted By Uid"
+    },
+    "migration_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Migration Id"
+    },
+    "client": {
+      "$ref": "#/components/schemas/ClientBaseResponse"
+    },
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "external_reference_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "External Reference Id"
+    },
+    "region": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Region"
+    }
+  },
+  "type": "object",
+  "required": [
+    "uid",
+    "created_at",
+    "client",
+    "name"
+  ],
+  "title": "WasteGeneratorBaseResponse"
+}

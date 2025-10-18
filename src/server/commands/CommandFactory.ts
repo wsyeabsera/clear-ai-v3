@@ -19,6 +19,31 @@ import { GetInspectionCommand } from './inspections/GetInspectionCommand';
 import { UpdateInspectionCommand } from './inspections/UpdateInspectionCommand';
 import { DeleteInspectionCommand } from './inspections/DeleteInspectionCommand';
 import { ListInspectionsCommand } from './inspections/ListInspectionsCommand';
+import { CreateContractCommand } from './contracts/CreateContractCommand';
+import { GetContractCommand } from './contracts/GetContractCommand';
+import { UpdateContractCommand } from './contracts/UpdateContractCommand';
+import { DeleteContractCommand } from './contracts/DeleteContractCommand';
+import { ListContractsCommand } from './contracts/ListContractsCommand';
+import { CreateWasteCodeCommand } from './waste-codes/CreateWasteCodeCommand';
+import { GetWasteCodeCommand } from './waste-codes/GetWasteCodeCommand';
+import { UpdateWasteCodeCommand } from './waste-codes/UpdateWasteCodeCommand';
+import { DeleteWasteCodeCommand } from './waste-codes/DeleteWasteCodeCommand';
+import { ListWasteCodesCommand } from './waste-codes/ListWasteCodesCommand';
+import { CreateWasteGeneratorCommand } from './waste-generators/CreateWasteGeneratorCommand';
+import { GetWasteGeneratorCommand } from './waste-generators/GetWasteGeneratorCommand';
+import { UpdateWasteGeneratorCommand } from './waste-generators/UpdateWasteGeneratorCommand';
+import { DeleteWasteGeneratorCommand } from './waste-generators/DeleteWasteGeneratorCommand';
+import { ListWasteGeneratorsCommand } from './waste-generators/ListWasteGeneratorsCommand';
+import { CreateShipmentWasteCompositionCommand } from './shipment-waste-compositions/CreateShipmentWasteCompositionCommand';
+import { GetShipmentWasteCompositionCommand } from './shipment-waste-compositions/GetShipmentWasteCompositionCommand';
+import { UpdateShipmentWasteCompositionCommand } from './shipment-waste-compositions/UpdateShipmentWasteCompositionCommand';
+import { DeleteShipmentWasteCompositionCommand } from './shipment-waste-compositions/DeleteShipmentWasteCompositionCommand';
+import { ListShipmentWasteCompositionsCommand } from './shipment-waste-compositions/ListShipmentWasteCompositionsCommand';
+import { CreateWastePropertyCommand } from './waste-properties/CreateWastePropertyCommand';
+import { GetWastePropertyCommand } from './waste-properties/GetWastePropertyCommand';
+import { UpdateWastePropertyCommand } from './waste-properties/UpdateWastePropertyCommand';
+import { DeleteWastePropertyCommand } from './waste-properties/DeleteWastePropertyCommand';
+import { ListWastePropertiesCommand } from './waste-properties/ListWastePropertiesCommand';
 
 export class CommandFactory {
   private static commands: Map<string, ICommand> = new Map([
@@ -49,6 +74,41 @@ export class CommandFactory {
     ['inspections_update', new UpdateInspectionCommand()],
     ['inspections_delete', new DeleteInspectionCommand()],
     ['inspections_list', new ListInspectionsCommand()],
+    
+    // Contract commands
+    ['contracts_create', new CreateContractCommand()],
+    ['contracts_get', new GetContractCommand()],
+    ['contracts_update', new UpdateContractCommand()],
+    ['contracts_delete', new DeleteContractCommand()],
+    ['contracts_list', new ListContractsCommand()],
+    
+    // Waste Code commands
+    ['waste_codes_create', new CreateWasteCodeCommand()],
+    ['waste_codes_get', new GetWasteCodeCommand()],
+    ['waste_codes_update', new UpdateWasteCodeCommand()],
+    ['waste_codes_delete', new DeleteWasteCodeCommand()],
+    ['waste_codes_list', new ListWasteCodesCommand()],
+    
+    // Waste Generator commands
+    ['waste_generators_create', new CreateWasteGeneratorCommand()],
+    ['waste_generators_get', new GetWasteGeneratorCommand()],
+    ['waste_generators_update', new UpdateWasteGeneratorCommand()],
+    ['waste_generators_delete', new DeleteWasteGeneratorCommand()],
+    ['waste_generators_list', new ListWasteGeneratorsCommand()],
+    
+    // Shipment Waste Composition commands
+    ['shipment_waste_compositions_create', new CreateShipmentWasteCompositionCommand()],
+    ['shipment_waste_compositions_get', new GetShipmentWasteCompositionCommand()],
+    ['shipment_waste_compositions_update', new UpdateShipmentWasteCompositionCommand()],
+    ['shipment_waste_compositions_delete', new DeleteShipmentWasteCompositionCommand()],
+    ['shipment_waste_compositions_list', new ListShipmentWasteCompositionsCommand()],
+    
+    // Waste Property commands
+    ['waste_properties_create', new CreateWastePropertyCommand()],
+    ['waste_properties_get', new GetWastePropertyCommand()],
+    ['waste_properties_update', new UpdateWastePropertyCommand()],
+    ['waste_properties_delete', new DeleteWastePropertyCommand()],
+    ['waste_properties_list', new ListWastePropertiesCommand()],
   ]);
 
   static getCommand(commandName: string): ICommand | undefined {
