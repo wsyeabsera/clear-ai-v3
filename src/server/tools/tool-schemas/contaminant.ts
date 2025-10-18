@@ -7,26 +7,26 @@ const contaminantTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contaminant' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
-        facility_uid: { type: 'string', description: 'Facility unique identifier' },
-        shipment_uid: { type: 'string', description: 'Shipment unique identifier' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
+        facility_id: { type: 'string', description: 'Facility MongoDB ObjectId' },
+        shipment_id: { type: 'string', description: 'Shipment MongoDB ObjectId' },
         material: { type: 'string', description: 'Contaminant material type' },
         estimated_size: { type: 'number', description: 'Estimated size' },
         notes: { type: 'string', description: 'Additional notes' },
       },
-      required: ['uid', 'client_uid', 'facility_uid', 'shipment_uid'],
+      required: ['id', 'client_uid', 'facility_uid', 'shipment_uid'],
     },
   },
   {
     name: 'contaminants_get',
-    description: 'Get a contaminant by UID',
+    description: 'Get a contaminant by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contaminant' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -35,12 +35,12 @@ const contaminantTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contaminant' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         material: { type: 'string', description: 'Contaminant material type' },
         estimated_size: { type: 'number', description: 'Estimated size' },
         notes: { type: 'string', description: 'Additional notes' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -49,9 +49,9 @@ const contaminantTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contaminant' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -60,8 +60,8 @@ const contaminantTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        facility_uid: { type: 'string', description: 'Filter by facility UID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment UID' },
+        facility_uid: { type: 'string', description: 'Filter by facility ID' },
+        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
         material: { type: 'string', description: 'Filter by material' },
         is_verified: { type: 'boolean', description: 'Filter by verification status' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

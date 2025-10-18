@@ -170,8 +170,6 @@ const InspectionSchema = new Schema<IInspection>({
 });
 
 // Indexes for performance
-InspectionSchema.index({ uid: 1 });
-InspectionSchema.index({ client_uid: 1, facility: 1 });
 InspectionSchema.index({ shipment: 1, custom_datetime: -1 });
 InspectionSchema.index({ facility: 1, custom_datetime: -1 });
 

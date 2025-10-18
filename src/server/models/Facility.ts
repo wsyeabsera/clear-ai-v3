@@ -174,7 +174,6 @@ const FacilitySchema = new Schema<IFacility>({
 });
 
 // Indexes for performance
-FacilitySchema.index({ uid: 1 });
 FacilitySchema.index({ client: 1, name: 1 });
 FacilitySchema.index({ city: 1, country: 1 });
 

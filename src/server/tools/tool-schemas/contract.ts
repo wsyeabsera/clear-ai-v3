@@ -7,9 +7,9 @@ const contractTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contract' },
-        facility_uid: { type: 'string', description: 'Facility unique identifier' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
+        facility_id: { type: 'string', description: 'Facility MongoDB ObjectId' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
         title: { type: 'string', description: 'Contract title' },
         external_reference_id: { type: 'string', description: 'External reference ID' },
         external_waste_code_id: { type: 'string', description: 'External waste code ID' },
@@ -20,18 +20,18 @@ const contractTools: MCPTool[] = [
         tonnage_actual: { type: 'number', description: 'Actual tonnage' },
         source: { type: 'string', description: 'Data source' },
       },
-      required: ['uid', 'facility_uid', 'client_uid'],
+      required: ['id', 'facility_uid', 'client_uid'],
     },
   },
   {
     name: 'contracts_get',
-    description: 'Get a contract by UID',
+    description: 'Get a contract by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contract' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -40,12 +40,12 @@ const contractTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contract' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         title: { type: 'string', description: 'Contract title' },
         tonnage_actual: { type: 'number', description: 'Actual tonnage' },
         end_date: { type: 'string', format: 'date-time', description: 'Contract end date' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -54,9 +54,9 @@ const contractTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the contract' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -65,8 +65,8 @@ const contractTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        facility_uid: { type: 'string', description: 'Filter by facility UID' },
-        client_uid: { type: 'string', description: 'Filter by client UID' },
+        facility_uid: { type: 'string', description: 'Filter by facility ID' },
+        client_uid: { type: 'string', description: 'Filter by client ID' },
         title: { type: 'string', description: 'Filter by contract title' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },
         date_to: { type: 'string', format: 'date-time', description: 'Filter to date' },

@@ -8,11 +8,11 @@ const shipmentWasteCompositionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste composition' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
-        shipment_uid: { type: 'string', description: 'Shipment unique identifier' },
-        facility_uid: { type: 'string', description: 'Facility unique identifier' },
-        bunker_uid: { type: 'string', description: 'Bunker unique identifier' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
+        shipment_id: { type: 'string', description: 'Shipment MongoDB ObjectId' },
+        facility_id: { type: 'string', description: 'Facility MongoDB ObjectId' },
+        bunker_id: { type: 'string', description: 'Bunker MongoDB ObjectId' },
         
         // Basic composition fields
         moisture_level: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Moisture level' },
@@ -103,18 +103,18 @@ const shipmentWasteCompositionTools: MCPTool[] = [
         // Additional fields
         gcp_image_path: { type: 'string', description: 'Google Cloud Platform image path' },
       },
-      required: ['uid', 'client_uid', 'shipment_uid', 'facility_uid', 'bunker_uid'],
+      required: ['id', 'client_uid', 'shipment_uid', 'facility_uid', 'bunker_uid'],
     },
   },
   {
     name: 'shipment_waste_compositions_get',
-    description: 'Get a shipment waste composition by UID',
+    description: 'Get a shipment waste composition by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste composition' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -123,7 +123,7 @@ const shipmentWasteCompositionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste composition' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         
         // Basic composition fields
         moisture_level: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Moisture level' },
@@ -217,7 +217,7 @@ const shipmentWasteCompositionTools: MCPTool[] = [
         merged_by_uid: { type: 'string', description: 'Merge user UID' },
         merged_from_shipment_uid: { type: 'string', description: 'Original shipment UID' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -226,9 +226,9 @@ const shipmentWasteCompositionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste composition' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -237,10 +237,10 @@ const shipmentWasteCompositionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client UID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment UID' },
-        facility_uid: { type: 'string', description: 'Filter by facility UID' },
-        bunker_uid: { type: 'string', description: 'Filter by bunker UID' },
+        client_uid: { type: 'string', description: 'Filter by client ID' },
+        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
+        facility_uid: { type: 'string', description: 'Filter by facility ID' },
+        bunker_uid: { type: 'string', description: 'Filter by bunker ID' },
         moisture_level: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Filter by moisture level' },
         sulfur_dioxide_risk: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Filter by sulfur dioxide risk' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

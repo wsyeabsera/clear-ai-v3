@@ -129,7 +129,6 @@ const ShipmentSchema = new Schema<IShipment>({
 });
 
 // Indexes for performance
-ShipmentSchema.index({ client_uid: 1, uid: 1 });
 ShipmentSchema.index({ facility: 1, shipment_datetime: -1 });
 ShipmentSchema.index({ license_plate: 1 });
 ShipmentSchema.index({ entry_timestamp: -1 });

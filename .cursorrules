@@ -1,0 +1,25 @@
+# Cursor Rules for Waste Management MCP Server
+
+## MCP Server Configuration
+This project includes an MCP (Model Context Protocol) server that provides tools for waste management operations.
+
+### Available Tools
+The MCP server exposes the following tool categories:
+- **Shipments**: Create, read, update, delete shipment records
+- **Facilities**: Manage facility information
+- **Contaminants**: Track contaminant records
+- **Inspections**: Handle inspection data
+- **Contracts**: Manage contract information
+- **Waste Codes**: Handle waste code classifications
+- **Waste Generators**: Manage waste generator records
+- **Shipment Waste Compositions**: Track waste composition data
+- **Waste Properties**: Manage waste property details
+
+### Usage
+The MCP server runs on stdio transport and can be connected to via Cursor's MCP integration.
+
+### Development
+- Server entry point: `src/server/index.ts`
+- Client entry point: `src/client/index.ts`
+- Build command: `npm run build`
+- Start server: `npm run dev:server`

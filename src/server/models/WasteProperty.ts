@@ -198,8 +198,5 @@ const WastePropertySchema = new Schema<IWasteProperty>({
 });
 
 // Indexes for performance
-WastePropertySchema.index({ contract: 1, uid: 1 });
-WastePropertySchema.index({ client_uid: 1, contract_uid: 1 });
-
 export const WasteProperty = mongoose.model<IWasteProperty>('WasteProperty', WastePropertySchema);
 

@@ -164,7 +164,6 @@ const BunkerSchema = new Schema<IBunker>({
 });
 
 // Indexes for performance
-BunkerSchema.index({ facility: 1, uid: 1 });
 BunkerSchema.index({ name: 1 });
 
 export const Bunker = mongoose.model<IBunker>('Bunker', BunkerSchema);

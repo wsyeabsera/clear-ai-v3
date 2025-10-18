@@ -1,4 +1,14 @@
 import { ICommand } from './ICommand';
+import { CreateClientCommand } from './clients/CreateClientCommand';
+import { GetClientCommand } from './clients/GetClientCommand';
+import { UpdateClientCommand } from './clients/UpdateClientCommand';
+import { DeleteClientCommand } from './clients/DeleteClientCommand';
+import { ListClientCommand } from './clients/ListClientCommand';
+import { CreateBunkerCommand } from './bunkers/CreateBunkerCommand';
+import { GetBunkerCommand } from './bunkers/GetBunkerCommand';
+import { UpdateBunkerCommand } from './bunkers/UpdateBunkerCommand';
+import { DeleteBunkerCommand } from './bunkers/DeleteBunkerCommand';
+import { ListBunkerCommand } from './bunkers/ListBunkerCommand';
 import { CreateShipmentCommand } from './shipments/CreateShipmentCommand';
 import { GetShipmentCommand } from './shipments/GetShipmentCommand';
 import { UpdateShipmentCommand } from './shipments/UpdateShipmentCommand';
@@ -47,6 +57,20 @@ import { ListWastePropertiesCommand } from './waste-properties/ListWasteProperti
 
 export class CommandFactory {
   private static commands: Map<string, ICommand> = new Map([
+    // Client commands
+    ['clients_create', new CreateClientCommand()],
+    ['clients_get', new GetClientCommand()],
+    ['clients_update', new UpdateClientCommand()],
+    ['clients_delete', new DeleteClientCommand()],
+    ['clients_list', new ListClientCommand()],
+    
+    // Bunker commands
+    ['bunkers_create', new CreateBunkerCommand()],
+    ['bunkers_get', new GetBunkerCommand()],
+    ['bunkers_update', new UpdateBunkerCommand()],
+    ['bunkers_delete', new DeleteBunkerCommand()],
+    ['bunkers_list', new ListBunkerCommand()],
+    
     // Shipment commands
     ['shipments_create', new CreateShipmentCommand()],
     ['shipments_get', new GetShipmentCommand()],

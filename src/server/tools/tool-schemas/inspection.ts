@@ -7,15 +7,15 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the inspection' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
-        facility_uid: { type: 'string', description: 'Facility unique identifier' },
-        shipment_uid: { type: 'string', description: 'Shipment unique identifier' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
+        facility_id: { type: 'string', description: 'Facility MongoDB ObjectId' },
+        shipment_id: { type: 'string', description: 'Shipment MongoDB ObjectId' },
         delivery_accepted: { type: 'boolean', description: 'Delivery accepted status' },
         delivery_rejected: { type: 'boolean', description: 'Delivery rejected status' },
         comments: { type: 'string', description: 'Inspection comments' },
       },
-      required: ['uid', 'client_uid', 'facility_uid', 'shipment_uid'],
+      required: ['id', 'client_uid', 'facility_uid', 'shipment_uid'],
     },
   },
   {
@@ -24,9 +24,9 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the inspection' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -35,12 +35,12 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the inspection' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         delivery_accepted: { type: 'boolean', description: 'Delivery accepted status' },
         delivery_rejected: { type: 'boolean', description: 'Delivery rejected status' },
         comments: { type: 'string', description: 'Inspection comments' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -49,9 +49,9 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the inspection' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -60,9 +60,9 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client UID' },
-        facility_uid: { type: 'string', description: 'Filter by facility UID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment UID' },
+        client_uid: { type: 'string', description: 'Filter by client ID' },
+        facility_uid: { type: 'string', description: 'Filter by facility ID' },
+        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
         delivery_accepted: { type: 'boolean', description: 'Filter by accepted status' },
         delivery_rejected: { type: 'boolean', description: 'Filter by rejected status' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

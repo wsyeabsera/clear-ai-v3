@@ -749,7 +749,6 @@ const ShipmentWasteCompositionSchema = new Schema<IShipmentWasteComposition>({
 });
 
 // Indexes for performance
-ShipmentWasteCompositionSchema.index({ client_uid: 1, uid: 1 });
 ShipmentWasteCompositionSchema.index({ shipment: 1, facility: 1 });
 ShipmentWasteCompositionSchema.index({ facility: 1, created_at: -1 });
 

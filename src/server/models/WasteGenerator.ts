@@ -129,7 +129,6 @@ const WasteGeneratorSchema = new Schema<IWasteGenerator>({
 });
 
 // Indexes for performance
-WasteGeneratorSchema.index({ client: 1, uid: 1 });
 WasteGeneratorSchema.index({ name: 1 });
 
 export const WasteGenerator = mongoose.model<IWasteGenerator>('WasteGenerator', WasteGeneratorSchema);

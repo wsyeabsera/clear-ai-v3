@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "waste-management": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/server/index.js"],
+      "cwd": "/Users/yab/Projects/clear-ai-v3",
+      "env": {
+        "MONGODB_URI": "mongodb://localhost:27017/waste-management",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

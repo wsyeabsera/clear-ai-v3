@@ -9,8 +9,8 @@ const wasteGeneratorTools: MCPTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          uid: { type: 'string', description: 'Unique identifier for the waste generator' },
-          client_uid: { type: 'string', description: 'Client unique identifier' },
+          id: { type: 'string', description: 'MongoDB ObjectId' },
+          client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
           name: { type: 'string', description: 'Waste generator name' },
           external_reference_id: { type: 'string', description: 'External reference ID' },
           region: { type: 'string', description: 'Region' },
@@ -30,18 +30,18 @@ const wasteGeneratorTools: MCPTool[] = [
           source: { type: 'string', description: 'Source' },
           notes: { type: 'string', description: 'Additional notes' },
         },
-        required: ['uid', 'name', 'client_uid'],
+        required: ['id', 'name', 'client_uid'],
       },
     },
     {
       name: 'waste_generators_get',
-      description: 'Get a waste generator by UID',
+      description: 'Get a waste generator by ID',
       inputSchema: {
         type: 'object',
         properties: {
-          uid: { type: 'string', description: 'Unique identifier for the waste generator' },
+          id: { type: 'string', description: 'MongoDB ObjectId' },
         },
-        required: ['uid'],
+        required: ['id'],
       },
     },
     {
@@ -50,7 +50,7 @@ const wasteGeneratorTools: MCPTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          uid: { type: 'string', description: 'Unique identifier for the waste generator' },
+          id: { type: 'string', description: 'MongoDB ObjectId' },
           name: { type: 'string', description: 'Waste generator name' },
           external_reference_id: { type: 'string', description: 'External reference ID' },
           region: { type: 'string', description: 'Region' },
@@ -70,7 +70,7 @@ const wasteGeneratorTools: MCPTool[] = [
           source: { type: 'string', description: 'Source' },
           notes: { type: 'string', description: 'Additional notes' },
         },
-        required: ['uid'],
+        required: ['id'],
       },
     },
     {
@@ -79,9 +79,9 @@ const wasteGeneratorTools: MCPTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          uid: { type: 'string', description: 'Unique identifier for the waste generator' },
+          id: { type: 'string', description: 'MongoDB ObjectId' },
         },
-        required: ['uid'],
+        required: ['id'],
       },
     },
     {
@@ -90,7 +90,7 @@ const wasteGeneratorTools: MCPTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          client_uid: { type: 'string', description: 'Filter by client UID' },
+          client_uid: { type: 'string', description: 'Filter by client ID' },
           name: { type: 'string', description: 'Filter by name' },
           region: { type: 'string', description: 'Filter by region' },
           city: { type: 'string', description: 'Filter by city' },

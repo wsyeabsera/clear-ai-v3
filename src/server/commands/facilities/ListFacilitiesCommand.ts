@@ -7,6 +7,10 @@ export class ListFacilitiesCommand implements ICommand {
       // Build query filter
       const filter: any = {};
       
+      if (params.client_id) {
+        filter.client = params.client_id;
+      }
+      
       if (params.name) {
         filter.name = { $regex: params.name, $options: 'i' };
       }

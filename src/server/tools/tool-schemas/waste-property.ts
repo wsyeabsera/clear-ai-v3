@@ -7,9 +7,9 @@ const wastePropertyTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste property' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
-        contract_uid: { type: 'string', description: 'Contract unique identifier' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
+        contract_id: { type: 'string', description: 'Contract MongoDB ObjectId' },
         // Waste details
         waste_description: { type: 'string', description: 'Waste description' },
         waste_amount: { type: 'number', description: 'Waste amount in tons' },
@@ -41,18 +41,18 @@ const wastePropertyTools: MCPTool[] = [
         // Other
         comments: { type: 'string', description: 'Additional comments' },
       },
-      required: ['uid', 'client_uid', 'contract_uid'],
+      required: ['id', 'client_uid', 'contract_uid'],
     },
   },
   {
     name: 'waste_properties_get',
-    description: 'Get a waste property by UID',
+    description: 'Get a waste property by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste property' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -61,7 +61,7 @@ const wastePropertyTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste property' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         // Waste details
         waste_description: { type: 'string', description: 'Waste description' },
         waste_amount: { type: 'number', description: 'Waste amount in tons' },
@@ -93,7 +93,7 @@ const wastePropertyTools: MCPTool[] = [
         // Other
         comments: { type: 'string', description: 'Additional comments' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -102,9 +102,9 @@ const wastePropertyTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste property' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -113,8 +113,8 @@ const wastePropertyTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client UID' },
-        contract_uid: { type: 'string', description: 'Filter by contract UID' },
+        client_uid: { type: 'string', description: 'Filter by client ID' },
+        contract_uid: { type: 'string', description: 'Filter by contract ID' },
         min_calorific_value: { type: 'number', description: 'Filter by minimum calorific value' },
         max_calorific_value: { type: 'number', description: 'Filter by maximum calorific value' },
         page: { type: 'number', description: 'Page number' },

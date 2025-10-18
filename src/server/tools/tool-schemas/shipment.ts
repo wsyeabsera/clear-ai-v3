@@ -7,29 +7,28 @@ const shipmentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the shipment' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
         license_plate: { type: 'string', description: 'Vehicle license plate' },
         entry_weight: { type: 'number', description: 'Entry weight in kg' },
         exit_weight: { type: 'number', description: 'Exit weight in kg' },
         entry_timestamp: { type: 'string', format: 'date-time', description: 'Entry timestamp' },
         exit_timestamp: { type: 'string', format: 'date-time', description: 'Exit timestamp' },
-        facility_uid: { type: 'string', description: 'Facility unique identifier' },
+        facility_id: { type: 'string', description: 'Facility MongoDB ObjectId' },
         gate_number: { type: 'number', description: 'Gate number' },
         notes: { type: 'string', description: 'Additional notes' },
       },
-      required: ['uid', 'client_uid', 'license_plate'],
+      required: ['client_id', 'license_plate'],
     },
   },
   {
     name: 'shipments_get',
-    description: 'Get a shipment by UID',
+    description: 'Get a shipment by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the shipment' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the shipment' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -38,12 +37,12 @@ const shipmentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the shipment' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the shipment' },
         entry_weight: { type: 'number', description: 'Entry weight in kg' },
         exit_weight: { type: 'number', description: 'Exit weight in kg' },
         notes: { type: 'string', description: 'Additional notes' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -52,9 +51,9 @@ const shipmentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the shipment' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the shipment' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -63,8 +62,8 @@ const shipmentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client UID' },
-        facility_uid: { type: 'string', description: 'Filter by facility UID' },
+        client_id: { type: 'string', description: 'Filter by client ID' },
+        facility_id: { type: 'string', description: 'Filter by facility ID' },
         license_plate: { type: 'string', description: 'Filter by license plate' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },
         date_to: { type: 'string', format: 'date-time', description: 'Filter to date' },

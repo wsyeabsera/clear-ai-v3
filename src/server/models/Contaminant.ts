@@ -222,7 +222,6 @@ const ContaminantSchema = new Schema<IContaminant>({
 });
 
 // Indexes for performance
-ContaminantSchema.index({ uid: 1 });
 ContaminantSchema.index({ client: 1, facility: 1 });
 ContaminantSchema.index({ shipment: 1, captured_datetime: -1 });
 ContaminantSchema.index({ facility: 1, captured_datetime: -1 });

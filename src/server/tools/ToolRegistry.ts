@@ -1,4 +1,6 @@
 import { MCPTool } from '../../types/mcp';
+import clientTools from './tool-schemas/client';
+import bunkerTools from './tool-schemas/bunker';
 import shipmentTools from './tool-schemas/shipment';
 import facilityTools from './tool-schemas/facility';
 import contaminantTools from './tool-schemas/contaminant';
@@ -10,6 +12,8 @@ import shipmentWasteCompositionTools from './tool-schemas/shipment-waste-composi
 import wastePropertyTools from './tool-schemas/waste-property';
 export class ToolRegistry {
   private static tools: MCPTool[] = [
+    ...clientTools,
+    ...bunkerTools,
     ...shipmentTools,
     ...facilityTools,
     ...contaminantTools,

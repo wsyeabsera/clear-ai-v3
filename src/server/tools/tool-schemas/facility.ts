@@ -8,27 +8,27 @@ const facilityTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the facility' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the facility' },
         name: { type: 'string', description: 'Facility name' },
-        client_uid: { type: 'string', description: 'Client unique identifier' },
+        client_id: { type: 'string', description: 'Client MongoDB ObjectId' },
         address: { type: 'string', description: 'Street address' },
         city: { type: 'string', description: 'City' },
         country: { type: 'string', description: 'Country' },
         email: { type: 'string', description: 'Contact email' },
         phone: { type: 'string', description: 'Contact phone' },
       },
-      required: ['uid', 'name', 'client_uid'],
+      required: ['name', 'client_id'],
     },
   },
   {
     name: 'facilities_get',
-    description: 'Get a facility by UID',
+    description: 'Get a facility by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the facility' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the facility' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -37,12 +37,12 @@ const facilityTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the facility' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the facility' },
         name: { type: 'string', description: 'Facility name' },
         address: { type: 'string', description: 'Street address' },
         email: { type: 'string', description: 'Contact email' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -51,9 +51,9 @@ const facilityTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the facility' },
+        id: { type: 'string', description: 'MongoDB ObjectId for the facility' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -62,6 +62,7 @@ const facilityTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        client_id: { type: 'string', description: 'Filter by client ID' },
         name: { type: 'string', description: 'Filter by name' },
         city: { type: 'string', description: 'Filter by city' },
         country: { type: 'string', description: 'Filter by country' },

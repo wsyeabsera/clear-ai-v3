@@ -142,7 +142,6 @@ const ContractSchema = new Schema<IContract>({
 });
 
 // Indexes for performance
-ContractSchema.index({ client_uid: 1, uid: 1 });
 ContractSchema.index({ facility: 1, start_date: -1 });
 ContractSchema.index({ waste_generator: 1 });
 ContractSchema.index({ waste_code: 1 });

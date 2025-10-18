@@ -9,7 +9,7 @@ const wasteCodeTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste code' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         code: { type: 'string', description: 'Waste code' },
         name: { type: 'string', description: 'Waste code name' },
         description: { type: 'string', description: 'Waste code description' },
@@ -20,18 +20,18 @@ const wasteCodeTools: MCPTool[] = [
         calorific_value_comment: { type: 'string', description: 'Calorific value comment' },
         source: { type: 'string', description: 'Data source' },
       },
-      required: ['uid', 'code', 'name'],
+      required: ['id', 'code', 'name'],
     },
   },
   {
     name: 'waste_codes_get',
-    description: 'Get a waste code by UID',
+    description: 'Get a waste code by ID',
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste code' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -40,13 +40,13 @@ const wasteCodeTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste code' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
         name: { type: 'string', description: 'Waste code name' },
         description: { type: 'string', description: 'Waste code description' },
         calorific_value_min: { type: 'number', description: 'Minimum calorific value' },
         calorific_value_max: { type: 'number', description: 'Maximum calorific value' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
@@ -55,9 +55,9 @@ const wasteCodeTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        uid: { type: 'string', description: 'Unique identifier for the waste code' },
+        id: { type: 'string', description: 'MongoDB ObjectId' },
       },
-      required: ['uid'],
+      required: ['id'],
     },
   },
   {
