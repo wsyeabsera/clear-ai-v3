@@ -1,0 +1,29 @@
+scalar JSON
+
+type Query {
+  """
+  List all available MCP tools
+  """
+  listTools: [Tool!]!
+}
+
+type Mutation {
+  """
+  Execute an MCP tool dynamically by name with parameters
+  """
+  executeTool(name: String!, params: JSON!): ToolResult!
+}
+
+type Tool {
+  name: String!
+  description: String!
+  inputSchema: JSON!
+}
+
+type ToolResult {
+  success: Boolean!
+  data: JSON
+  error: String
+  message: String
+  meta: JSON
+}
