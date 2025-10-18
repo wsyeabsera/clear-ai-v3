@@ -86,7 +86,6 @@ const WasteCodeSchema = new Schema<IWasteCode>({
 });
 
 // Indexes for performance
-WasteCodeSchema.index({ code: 1 });
 WasteCodeSchema.index({ name: 1 });
 
 export const WasteCode = mongoose.model<IWasteCode>('WasteCode', WasteCodeSchema);

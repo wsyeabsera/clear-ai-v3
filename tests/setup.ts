@@ -1,30 +1,44 @@
+// Global test setup configuration
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
+import { connect, disconnect } from 'mongoose';
 
 let mongoServer: MongoMemoryServer;
 
+// Set up test environment before all tests
 beforeAll(async () => {
-  // Start in-memory MongoDB instance
+  // Set test environment variables
+  process.env.NODE_ENV = 'test';
+  process.env.MONGODB_URI = 'mongodb://localhost:27017/waste-management-test';
+  process.env.OPENAI_API_KEY = 'test-openai-key';
+  process.env.GROQ_API_KEY = 'test-groq-key';
+  process.env.DEFAULT_LLM_PROVIDER = 'openai';
+  process.env.ENABLE_LLM_FALLBACK = 'true';
+  process.env.MAX_PLAN_REFINEMENTS = '3';
+  process.env.PLANNER_TIMEOUT_MS = '30000';
+  
+  // Start MongoDB Memory Server
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
   
-  // Connect to the in-memory database
-  await mongoose.connect(mongoUri);
-});
-
-afterAll(async () => {
-  // Close database connection
-  await mongoose.connection.close();
+  // Connect to test database
+  await connect(mongoUri);
   
-  // Stop the in-memory MongoDB instance
-  await mongoServer.stop();
-});
+  console.log('Test database setup complete');
+}, 30000); // 30 second timeout for setup
 
-beforeEach(async () => {
-  // Clear all collections before each test
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+// Clean up after all tests
+afterAll(async () => {
+  // Disconnect from database
+  await disconnect();
+  
+  // Stop MongoDB Memory Server
+  if (mongoServer) {
+    await mongoServer.stop();
   }
-});
+  
+  console.log('Test database cleanup complete');
+}, 30000); // 30 second timeout for cleanup
+
+// Increase test timeout for database operations
+jest.setTimeout(30000);

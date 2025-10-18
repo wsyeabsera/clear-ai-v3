@@ -5,6 +5,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { MCPClient } from './MCPClient';
 import { DynamicToolExecutor } from './DynamicToolExecutor';
+import { plannerResolvers } from '../agents/planner/graphql/resolvers';
+import { connectToDatabase } from '../server/database/connection';
 import GraphQLJSON from 'graphql-type-json';
 
 // Read GraphQL schema
@@ -25,17 +27,23 @@ const resolvers = {
     listTools: async () => {
       return await executor.listAvailableTools();
     },
+    ...plannerResolvers.Query,
   },
   
   Mutation: {
     executeTool: async (_: any, { name, params }: { name: string; params: any }) => {
       return await executor.executeTool(name, params);
     },
+    ...plannerResolvers.Mutation,
   },
 };
 
 async function startServer() {
   try {
+    // Connect to MongoDB first
+    await connectToDatabase();
+    console.log('[Apollo Server] Connected to MongoDB');
+    
     // Connect to MCP server
     const serverPath = process.env.NODE_ENV === 'production' 
       ? join(__dirname, '../server/index.js')

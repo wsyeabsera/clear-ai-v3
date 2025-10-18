@@ -1,11 +1,18 @@
-scalar JSON
+# GraphQL schema for the Planner Agent
+
+type Mutation {
+  """
+  Create a new plan for a given query
+  """
+  createPlan(query: String!, llmProvider: String): PlanResponse!
+  
+  """
+  Delete a plan by request ID
+  """
+  deletePlan(requestId: String!): Boolean!
+}
 
 type Query {
-  """
-  List all available MCP tools
-  """
-  listTools: [Tool!]!
-  
   """
   Get a plan by request ID
   """
@@ -21,39 +28,6 @@ type Query {
   """
   getRecentPlans(limit: Int): [PlanSummary!]!
 }
-
-type Mutation {
-  """
-  Execute an MCP tool dynamically by name with parameters
-  """
-  executeTool(name: String!, params: JSON!): ToolResult!
-  
-  """
-  Create a new plan for a given query
-  """
-  createPlan(query: String!, llmProvider: String): PlanResponse!
-  
-  """
-  Delete a plan by request ID
-  """
-  deletePlan(requestId: String!): Boolean!
-}
-
-type Tool {
-  name: String!
-  description: String!
-  inputSchema: JSON!
-}
-
-type ToolResult {
-  success: Boolean!
-  data: JSON
-  error: String
-  message: String
-  meta: JSON
-}
-
-# Planner Agent Types
 
 type PlanResponse {
   requestId: String!
@@ -117,3 +91,5 @@ enum PlanStatus {
   COMPLETED
   FAILED
 }
+
+scalar JSON
