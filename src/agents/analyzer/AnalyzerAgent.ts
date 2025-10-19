@@ -221,9 +221,12 @@ export class AnalyzerAgent {
     historicalContext: AnalyzerMemoryEntry[]
   ): string {
     const historicalInsights = historicalContext.length > 0 
-      ? `\n\nHistorical Context:\n${historicalContext.map(h => 
-          `- Previous execution: ${h.feedback}\n  Success rate: ${h.evaluation_metrics.success_rate}\n  Patterns: ${h.evaluation_metrics.error_patterns.join(', ')}`
-        ).join('\n')}`
+      ? `\n\nHistorical Context:\n${historicalContext.map(h => {
+          const evaluationMetrics = h.evaluation_metrics || {};
+          const successRate = evaluationMetrics.success_rate || 0;
+          const errorPatterns = evaluationMetrics.error_patterns || [];
+          return `- Previous execution: ${h.feedback}\n  Success rate: ${successRate}\n  Patterns: ${errorPatterns.join(', ')}`;
+        }).join('\n')}`
       : '';
 
     return `

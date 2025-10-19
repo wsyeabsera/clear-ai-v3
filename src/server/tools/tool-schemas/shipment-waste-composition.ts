@@ -103,7 +103,7 @@ const shipmentWasteCompositionTools: MCPTool[] = [
         // Additional fields
         gcp_image_path: { type: 'string', description: 'Google Cloud Platform image path' },
       },
-      required: ['id', 'client_uid', 'shipment_uid', 'facility_uid', 'bunker_uid'],
+      required: ['client_id', 'shipment_id', 'facility_id', 'bunker_id'],
     },
   },
   {
@@ -214,8 +214,8 @@ const shipmentWasteCompositionTools: MCPTool[] = [
         // Additional fields
         gcp_image_path: { type: 'string', description: 'Google Cloud Platform image path' },
         merged_at: { type: 'string', format: 'date-time', description: 'Merge timestamp' },
-        merged_by_uid: { type: 'string', description: 'Merge user UID' },
-        merged_from_shipment_uid: { type: 'string', description: 'Original shipment UID' },
+        merged_by_id: { type: 'string', description: 'Merge user ID' },
+        merged_from_shipment_id: { type: 'string', description: 'Original shipment ID' },
       },
       required: ['id'],
     },
@@ -237,10 +237,10 @@ const shipmentWasteCompositionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client ID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
-        facility_uid: { type: 'string', description: 'Filter by facility ID' },
-        bunker_uid: { type: 'string', description: 'Filter by bunker ID' },
+        client_id: { type: 'string', description: 'Filter by client ID' },
+        shipment_id: { type: 'string', description: 'Filter by shipment ID' },
+        facility_id: { type: 'string', description: 'Filter by facility ID' },
+        bunker_id: { type: 'string', description: 'Filter by bunker ID' },
         moisture_level: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Filter by moisture level' },
         sulfur_dioxide_risk: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'NONE'], description: 'Filter by sulfur dioxide risk' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

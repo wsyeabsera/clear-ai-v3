@@ -15,7 +15,7 @@ const contaminantTools: MCPTool[] = [
         estimated_size: { type: 'number', description: 'Estimated size' },
         notes: { type: 'string', description: 'Additional notes' },
       },
-      required: ['id', 'client_uid', 'facility_uid', 'shipment_uid'],
+      required: ['client_id', 'facility_id', 'shipment_id'],
     },
   },
   {
@@ -60,8 +60,8 @@ const contaminantTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        facility_uid: { type: 'string', description: 'Filter by facility ID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
+        facility_id: { type: 'string', description: 'Filter by facility ID' },
+        shipment_id: { type: 'string', description: 'Filter by shipment ID' },
         material: { type: 'string', description: 'Filter by material' },
         is_verified: { type: 'boolean', description: 'Filter by verification status' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

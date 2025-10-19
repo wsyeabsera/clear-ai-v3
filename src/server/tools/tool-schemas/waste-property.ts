@@ -41,7 +41,7 @@ const wastePropertyTools: MCPTool[] = [
         // Other
         comments: { type: 'string', description: 'Additional comments' },
       },
-      required: ['id', 'client_uid', 'contract_uid'],
+      required: ['client_id', 'contract_id'],
     },
   },
   {
@@ -113,8 +113,8 @@ const wastePropertyTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client ID' },
-        contract_uid: { type: 'string', description: 'Filter by contract ID' },
+        client_id: { type: 'string', description: 'Filter by client ID' },
+        contract_id: { type: 'string', description: 'Filter by contract ID' },
         min_calorific_value: { type: 'number', description: 'Filter by minimum calorific value' },
         max_calorific_value: { type: 'number', description: 'Filter by maximum calorific value' },
         page: { type: 'number', description: 'Page number' },

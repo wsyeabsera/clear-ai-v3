@@ -100,6 +100,7 @@ export interface PlanGenerationResult {
 export interface LLMToolSelectionRequest {
   query: string;
   availableTools: MCPTool[];
+  analysisFeedback?: string;
 }
 
 export interface LLMToolSelectionResponse {
@@ -115,6 +116,7 @@ export interface LLMPlanGenerationRequest {
   toolSchemas: Record<string, any>;
   entities: string[];
   requestId: string;
+  analysisFeedback?: string;
 }
 
 export interface LLMPlanGenerationResponse {

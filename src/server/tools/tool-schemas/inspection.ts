@@ -15,7 +15,7 @@ const inspectionTools: MCPTool[] = [
         delivery_rejected: { type: 'boolean', description: 'Delivery rejected status' },
         comments: { type: 'string', description: 'Inspection comments' },
       },
-      required: ['id', 'client_uid', 'facility_uid', 'shipment_uid'],
+      required: ['client_id', 'facility_id', 'shipment_id'],
     },
   },
   {
@@ -60,9 +60,9 @@ const inspectionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        client_uid: { type: 'string', description: 'Filter by client ID' },
-        facility_uid: { type: 'string', description: 'Filter by facility ID' },
-        shipment_uid: { type: 'string', description: 'Filter by shipment ID' },
+        client_id: { type: 'string', description: 'Filter by client ID' },
+        facility_id: { type: 'string', description: 'Filter by facility ID' },
+        shipment_id: { type: 'string', description: 'Filter by shipment ID' },
         delivery_accepted: { type: 'boolean', description: 'Filter by accepted status' },
         delivery_rejected: { type: 'boolean', description: 'Filter by rejected status' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },

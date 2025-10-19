@@ -2,8 +2,32 @@
 
 import { PlanStep } from '../planner/types';
 import { ExecutionStepResult, StepStatus, DependencyGraph, ExecutionContext } from './types';
+import { ComplexityAnalyzer, QueryComplexity, ExecutionStrategy } from '../planner/complexity-analyzer';
 
 export class ExecutionOrchestrator {
+  private complexityAnalyzer: ComplexityAnalyzer;
+  private executionStrategy: ExecutionStrategy | null = null;
+
+  constructor(tools: any[] = []) {
+    this.complexityAnalyzer = new ComplexityAnalyzer(tools);
+  }
+
+  /**
+   * Analyze query complexity and set execution strategy
+   */
+  analyzeAndSetStrategy(query: string, selectedTools: string[]): QueryComplexity {
+    const complexity = this.complexityAnalyzer.analyzeQueryComplexity(query, selectedTools);
+    this.executionStrategy = this.complexityAnalyzer.getExecutionStrategy(complexity);
+    return complexity;
+  }
+
+  /**
+   * Get current execution strategy
+   */
+  getExecutionStrategy(): ExecutionStrategy | null {
+    return this.executionStrategy;
+  }
+
   /**
    * Build dependency graph from plan steps
    */
@@ -73,11 +97,38 @@ export class ExecutionOrchestrator {
     steps: PlanStep[],
     context: ExecutionContext
   ): number[] {
+    const strategy = this.getExecutionStrategy();
+    const maxParallel = strategy?.maxParallelSteps || context.config.parallelExecutionLimit;
+    
     return readySteps.filter(stepIndex => {
       const step = steps[stepIndex];
-      return step.parallel && 
-             context.runningSteps.size < context.config.parallelExecutionLimit;
+      const canRunParallel = step.parallel || this.canRunInParallel(step, steps, readySteps);
+      const withinLimit = context.runningSteps.size < maxParallel;
+      
+      return canRunParallel && withinLimit;
     });
+  }
+
+  /**
+   * Determine if a step can run in parallel based on complexity analysis
+   */
+  private canRunInParallel(step: PlanStep, steps: PlanStep[], readySteps: number[]): boolean {
+    const strategy = this.getExecutionStrategy();
+    
+    // For complex strategies, allow more parallelization
+    if (strategy?.strategy === 'complex' || strategy?.strategy === 'parallel') {
+      // Check if this is a list operation that can run in parallel
+      if (step.tool.includes('_list')) {
+        return true;
+      }
+      
+      // Check if this is an independent get operation
+      if (step.tool.includes('_get') && step.dependsOn.length === 0) {
+        return true;
+      }
+    }
+    
+    return false;
   }
   
   /**
@@ -157,6 +208,98 @@ export class ExecutionOrchestrator {
     return dependents;
   }
   
+  /**
+   * Get intelligent batches for similar operations
+   */
+  getIntelligentBatches(
+    readySteps: number[],
+    steps: PlanStep[],
+    context: ExecutionContext
+  ): number[][] {
+    const strategy = this.getExecutionStrategy();
+    const batchSize = strategy?.batchSize || 2;
+    
+    const batches: number[][] = [];
+    const processed = new Set<number>();
+    
+    // Group similar operations
+    const listSteps = readySteps.filter(stepIndex => 
+      steps[stepIndex].tool.includes('_list') && !processed.has(stepIndex)
+    );
+    const getSteps = readySteps.filter(stepIndex => 
+      steps[stepIndex].tool.includes('_get') && !processed.has(stepIndex)
+    );
+    const otherSteps = readySteps.filter(stepIndex => 
+      !steps[stepIndex].tool.includes('_list') && 
+      !steps[stepIndex].tool.includes('_get') && 
+      !processed.has(stepIndex)
+    );
+    
+    // Create batches for list operations
+    for (let i = 0; i < listSteps.length; i += batchSize) {
+      const batch = listSteps.slice(i, i + batchSize);
+      if (batch.length > 0) {
+        batches.push(batch);
+        batch.forEach(stepIndex => processed.add(stepIndex));
+      }
+    }
+    
+    // Create batches for get operations
+    for (let i = 0; i < getSteps.length; i += batchSize) {
+      const batch = getSteps.slice(i, i + batchSize);
+      if (batch.length > 0) {
+        batches.push(batch);
+        batch.forEach(stepIndex => processed.add(stepIndex));
+      }
+    }
+    
+    // Add remaining steps as individual batches
+    otherSteps.forEach(stepIndex => {
+      batches.push([stepIndex]);
+      processed.add(stepIndex);
+    });
+    
+    return batches;
+  }
+
+  /**
+   * Check if steps can be batched together
+   */
+  canBatchSteps(stepIndices: number[], steps: PlanStep[]): boolean {
+    if (stepIndices.length < 2) return false;
+    
+    const stepTypes = stepIndices.map(idx => steps[idx].tool.split('_')[1]);
+    const uniqueTypes = new Set(stepTypes);
+    
+    // Can batch if all steps are the same type (list, get, etc.)
+    return uniqueTypes.size === 1;
+  }
+
+  /**
+   * Get execution priority for a step
+   */
+  getStepPriority(stepIndex: number, steps: PlanStep[]): number {
+    const step = steps[stepIndex];
+    const strategy = this.getExecutionStrategy();
+    
+    // Higher priority for list operations in complex queries
+    if (strategy?.strategy === 'complex' && step.tool.includes('_list')) {
+      return 1;
+    }
+    
+    // Higher priority for steps with no dependencies
+    if (step.dependsOn.length === 0) {
+      return 2;
+    }
+    
+    // Lower priority for create operations (usually depend on other data)
+    if (step.tool.includes('_create')) {
+      return 4;
+    }
+    
+    return 3;
+  }
+
   /**
    * Calculate execution progress percentage
    */

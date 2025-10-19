@@ -16,29 +16,14 @@ export class PineconeVectorStore implements VectorStore {
 
   async upsert(entries: VectorEntry[]): Promise<void> {
     try {
+      // For now, ignore namespaces and upsert all entries together
       const vectors = entries.map(entry => ({
         id: entry.id,
         values: entry.vector,
         metadata: entry.metadata
       }));
 
-      const upsertRequest: any = { vectors };
-
-      // Group entries by namespace
-      const namespaceGroups = this.groupByNamespace(entries);
-      
-      for (const [namespace, namespaceEntries] of Object.entries(namespaceGroups)) {
-        const namespaceVectors = namespaceEntries.map(entry => ({
-          id: entry.id,
-          values: entry.vector,
-          metadata: entry.metadata
-        }));
-
-        await this.index.upsert({
-          vectors: namespaceVectors,
-          namespace: namespace || undefined
-        });
-      }
+      await this.index.upsert(vectors);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to upsert vectors: ${error.message}`);
@@ -56,26 +41,29 @@ export class PineconeVectorStore implements VectorStore {
     try {
       const queryRequest: any = {
         vector,
-        topK
+        topK,
+        includeValues: true,
+        includeMetadata: true
       };
 
-      if (namespace) {
-        queryRequest.namespace = namespace;
-      }
+      // For now, ignore namespaces
+      // if (namespace && namespace !== 'default') {
+      //   queryRequest.namespace = namespace;
+      // }
 
       if (filter) {
         queryRequest.filter = filter;
       }
 
       // Use the correct Pinecone v2 API format
-      const response = await this.index.query({ queryRequest });
+      const response = await this.index.query(queryRequest);
 
-      return response.matches.map((match: any) => ({
+      return response.matches?.map((match: any) => ({
         id: match.id,
         score: match.score,
-        vector: match.values,
+        vector: match.values || [],
         metadata: match.metadata || {}
-      }));
+      })) || [];
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to query vectors: ${error.message}`);

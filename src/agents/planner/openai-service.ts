@@ -17,6 +17,7 @@ export interface ToolSelectionRequest {
   query: string;
   availableTools: string;
   toolSchemas: Record<string, any>;
+  analysisFeedback?: string;
 }
 
 export interface ToolSelectionResponse {
@@ -32,6 +33,7 @@ export interface PlanGenerationRequest {
   toolSchemas: Record<string, any>;
   entities: string[];
   requestId: string;
+  analysisFeedback?: string;
 }
 
 export interface PlanGenerationResponse {
@@ -244,6 +246,8 @@ ${request.availableTools}
 Tool Schemas:
 ${JSON.stringify(request.toolSchemas, null, 2)}
 
+${request.analysisFeedback ? `\nHistorical Context from Past Executions:\n${request.analysisFeedback}\n` : ''}
+
 Please respond with JSON in this exact format:
 {
   "tools": ["tool1", "tool2"],
@@ -265,6 +269,8 @@ Entities: ${request.entities.join(', ')}
 Tool Schemas:
 ${JSON.stringify(request.toolSchemas, null, 2)}
 
+${request.analysisFeedback ? `\nAnalysis Feedback from Past Executions:\n${request.analysisFeedback}\n` : ''}
+
 Requirements:
 - Use proper parameter values (no placeholders)
 - Create dependency chains using \${step_N.result.field} syntax
@@ -273,6 +279,8 @@ Requirements:
 - Handle pagination intelligently (use reasonable limits)
 - Extract dates from natural language
 - Use the EXACT requestId provided in the query (do not generate a new one)
+${request.analysisFeedback ? '- Apply lessons learned from past executions' : ''}
+${request.analysisFeedback ? '- Avoid patterns that caused issues in similar queries' : ''}
 
 Please respond with JSON in this exact format:
 {

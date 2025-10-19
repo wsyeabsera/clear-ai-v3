@@ -26,7 +26,9 @@ export class ExecutionAgent {
   private defaultConfig: ExecutionConfig;
   
   constructor() {
-    this.orchestrator = new ExecutionOrchestrator();
+    // Get tools for complexity analysis
+    const tools = ToolAdapter.getAvailableTools();
+    this.orchestrator = new ExecutionOrchestrator(tools);
     this.retryHandler = new RetryHandler();
     this.rollbackHandler = new RollbackHandler();
     this.defaultConfig = {
@@ -57,6 +59,18 @@ export class ExecutionAgent {
       
       // Merge config with defaults
       const config = { ...this.defaultConfig, ...configInput };
+      
+      // Analyze query complexity and set execution strategy
+      const selectedTools = planRequest.plan.steps.map(step => step.tool);
+      const complexity = this.orchestrator.analyzeAndSetStrategy(planRequest.query, selectedTools);
+      
+      console.log(`📊 Query complexity analysis:`, {
+        isComplex: complexity.isComplex,
+        complexityScore: complexity.complexityScore,
+        entityCount: complexity.entityCount,
+        parallelizationOpportunities: complexity.parallelizationOpportunities.length,
+        riskFactors: complexity.riskFactors.length
+      });
       
       // Create execution context
       const context = this.orchestrator.createContext(
@@ -172,16 +186,32 @@ export class ExecutionAgent {
         // Sort by priority
         const sortedSteps = this.orchestrator.sortStepsByPriority(readySteps, steps);
         
-        // Execute parallel steps first
-        const parallelSteps = this.orchestrator.getParallelSteps(sortedSteps, steps, context);
-        if (parallelSteps.length > 0) {
-          await this.executeParallelSteps(parallelSteps, steps, stepResults, context);
-        }
-        
-        // Execute sequential steps
-        const sequentialSteps = this.orchestrator.getSequentialSteps(sortedSteps, steps, context);
-        for (const stepIndex of sequentialSteps) {
-          await this.executeSingleStep(stepIndex, steps, stepResults, context);
+        // Get intelligent batches for complex queries
+        const strategy = this.orchestrator.getExecutionStrategy();
+        if (strategy?.strategy === 'complex' || strategy?.strategy === 'batched') {
+          const batches = this.orchestrator.getIntelligentBatches(sortedSteps, steps, context);
+          
+          for (const batch of batches) {
+            if (batch.length > 1) {
+              // Execute batch in parallel
+              await this.executeBatchSteps(batch, steps, stepResults, context);
+            } else {
+              // Execute single step
+              await this.executeSingleStep(batch[0], steps, stepResults, context);
+            }
+          }
+        } else {
+          // Execute parallel steps first
+          const parallelSteps = this.orchestrator.getParallelSteps(sortedSteps, steps, context);
+          if (parallelSteps.length > 0) {
+            await this.executeParallelSteps(parallelSteps, steps, stepResults, context);
+          }
+          
+          // Execute sequential steps
+          const sequentialSteps = this.orchestrator.getSequentialSteps(sortedSteps, steps, context);
+          for (const stepIndex of sequentialSteps) {
+            await this.executeSingleStep(stepIndex, steps, stepResults, context);
+          }
         }
       }
       
@@ -213,6 +243,24 @@ export class ExecutionAgent {
     stepResults: ExecutionStepResult[],
     context: any
   ): Promise<void> {
+    const promises = stepIndices.map(stepIndex => 
+      this.executeSingleStep(stepIndex, steps, stepResults, context)
+    );
+    
+    await Promise.all(promises);
+  }
+  
+  /**
+   * Execute a batch of steps in parallel
+   */
+  private async executeBatchSteps(
+    stepIndices: number[],
+    steps: PlanStep[],
+    stepResults: ExecutionStepResult[],
+    context: any
+  ): Promise<void> {
+    console.log(`🔄 Executing batch of ${stepIndices.length} steps: ${stepIndices.join(', ')}`);
+    
     const promises = stepIndices.map(stepIndex => 
       this.executeSingleStep(stepIndex, steps, stepResults, context)
     );

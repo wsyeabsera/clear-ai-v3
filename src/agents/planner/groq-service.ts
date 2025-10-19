@@ -17,6 +17,7 @@ export interface ToolSelectionRequest {
   query: string;
   availableTools: string;
   toolSchemas: Record<string, any>;
+  analysisFeedback?: string;
 }
 
 export interface ToolSelectionResponse {
@@ -29,6 +30,7 @@ export interface ToolSelectionResponse {
 export interface CategorySelectionRequest {
   query: string;
   availableCategories: string;
+  analysisFeedback?: string;
 }
 
 export interface CategorySelectionResponse {
@@ -42,6 +44,7 @@ export interface PlanGenerationRequest {
   selectedTools: string[];
   toolSchemas: Record<string, any>;
   requestId: string;
+  analysisFeedback?: string;
   historicalContext?: string;
 }
 
@@ -193,7 +196,7 @@ export class GroqService {
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant that creates execution plans for waste management operations. Generate detailed, executable plans with proper parameter resolution and dependency management. Respond with valid JSON only.'
+            content: 'You are an AI assistant that creates execution plans for waste management operations. Generate detailed, executable plans with proper parameter resolution and dependency management. CRITICAL: You MUST respond with valid, complete JSON only. No markdown, no explanations, no additional text. The JSON must be properly formatted with correct syntax, no trailing commas, and all brackets properly closed.'
           },
           {
             role: 'user',
@@ -209,13 +212,34 @@ export class GroqService {
 
       // Clean up the response to extract JSON from markdown if needed
       const cleanedContent = this.extractJSONFromResponse(content);
-      const result = JSON.parse(cleanedContent);
+      
+      let result;
+      try {
+        result = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.error('JSON parsing failed, attempting to fix:', parseError);
+        console.error('Cleaned content:', cleanedContent);
+        
+        // Try to fix common JSON issues
+        let fixedContent = this.fixCommonJSONIssues(cleanedContent);
+        
+        try {
+          result = JSON.parse(fixedContent);
+        } catch (secondError) {
+          console.error('First fix failed, trying aggressive fix:', secondError);
+          
+          // Try more aggressive JSON fixing
+          fixedContent = this.aggressiveJSONFix(cleanedContent);
+          result = JSON.parse(fixedContent);
+        }
+      }
       
       // Clean up dependsOn values to ensure they are arrays of numbers
       if (result.plan && result.plan.steps) {
         result.plan.steps = result.plan.steps.map((step: any) => ({
           ...step,
-          dependsOn: this.cleanDependsOn(step.dependsOn)
+          dependsOn: this.cleanDependsOn(step.dependsOn),
+          parallel: this.cleanBoolean(step.parallel)
         }));
       }
       
@@ -283,15 +307,131 @@ export class GroqService {
       cleaned = cleaned.slice(3, -3).trim();
     }
     
-    // Find JSON object boundaries
-    const startIndex = cleaned.indexOf('{');
-    const lastIndex = cleaned.lastIndexOf('}');
+    // Remove any leading/trailing text that's not JSON
+    const lines = cleaned.split('\n');
+    let jsonLines: string[] = [];
+    let inJson = false;
+    let braceCount = 0;
     
-    if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
-      cleaned = cleaned.substring(startIndex, lastIndex + 1);
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Start of JSON object
+      if (trimmedLine.startsWith('{')) {
+        inJson = true;
+        braceCount = 0;
+      }
+      
+      if (inJson) {
+        jsonLines.push(line);
+        
+        // Count braces to track JSON object boundaries
+        for (const char of line) {
+          if (char === '{') braceCount++;
+          if (char === '}') braceCount--;
+        }
+        
+        // End of JSON object
+        if (braceCount === 0 && trimmedLine.endsWith('}')) {
+          break;
+        }
+      }
+    }
+    
+    if (jsonLines.length > 0) {
+      cleaned = jsonLines.join('\n');
+    } else {
+      // Fallback: find JSON object boundaries
+      const startIndex = cleaned.indexOf('{');
+      const lastIndex = cleaned.lastIndexOf('}');
+      
+      if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+        cleaned = cleaned.substring(startIndex, lastIndex + 1);
+      }
     }
     
     return cleaned;
+  }
+
+  /**
+   * Fix common JSON issues that might cause parsing failures
+   */
+  private fixCommonJSONIssues(content: string): string {
+    let fixed = content;
+    
+    // Fix trailing commas
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix unquoted keys
+    fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+    
+    // Fix single quotes to double quotes
+    fixed = fixed.replace(/'/g, '"');
+    
+    // Fix missing quotes around string values that should be quoted
+    fixed = fixed.replace(/:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*([,}])/g, ': "$1"$2');
+    
+    // Remove any trailing commas before closing braces/brackets
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix incomplete JSON by adding missing closing brackets
+    const openBraces = (fixed.match(/\{/g) || []).length;
+    const closeBraces = (fixed.match(/\}/g) || []).length;
+    const openBrackets = (fixed.match(/\[/g) || []).length;
+    const closeBrackets = (fixed.match(/\]/g) || []).length;
+    
+    // Add missing closing brackets
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      fixed += ']';
+    }
+    
+    // Add missing closing braces
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      fixed += '}';
+    }
+    
+    return fixed;
+  }
+
+  /**
+   * More aggressive JSON fixing for complex malformed JSON
+   */
+  private aggressiveJSONFix(content: string): string {
+    let fixed = content;
+    
+    // Remove any text before the first {
+    const firstBrace = fixed.indexOf('{');
+    if (firstBrace > 0) {
+      fixed = fixed.substring(firstBrace);
+    }
+    
+    // Remove any text after the last }
+    const lastBrace = fixed.lastIndexOf('}');
+    if (lastBrace !== -1 && lastBrace < fixed.length - 1) {
+      fixed = fixed.substring(0, lastBrace + 1);
+    }
+    
+    // Fix common issues
+    fixed = this.fixCommonJSONIssues(fixed);
+    
+    // Try to fix incomplete JSON by finding the last complete object
+    let lastCompleteIndex = -1;
+    let braceCount = 0;
+    
+    for (let i = 0; i < fixed.length; i++) {
+      if (fixed[i] === '{') braceCount++;
+      if (fixed[i] === '}') braceCount--;
+      
+      if (braceCount === 0 && fixed[i] === '}') {
+        lastCompleteIndex = i;
+      }
+    }
+    
+    if (lastCompleteIndex !== -1 && lastCompleteIndex < fixed.length - 1) {
+      fixed = fixed.substring(0, lastCompleteIndex + 1);
+    }
+    
+    return fixed;
   }
 
   /**
@@ -335,6 +475,24 @@ export class GroqService {
     return [];
   }
 
+  /**
+   * Clean up boolean values to ensure they are actual booleans
+   */
+  private cleanBoolean(value: any): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase();
+      if (lowerValue === 'true') return true;
+      if (lowerValue === 'false') return false;
+    }
+    
+    // Default to false for any other value
+    return false;
+  }
+
   private buildCategorySelectionPrompt(request: CategorySelectionRequest): string {
     return `
 Analyze this query and select the most relevant categories:
@@ -343,10 +501,14 @@ Query: "${request.query}"
 
 ${request.availableCategories}
 
+${request.analysisFeedback ? `\nHistorical Context from Past Executions:\n${request.analysisFeedback}\n` : ''}
+
 Select 1-3 primary categories that are most relevant to answering this query. Consider:
 1. What type of data is being requested?
 2. What entities are involved?
 3. What operations are needed?
+${request.analysisFeedback ? '4. What worked well in similar past queries?' : ''}
+${request.analysisFeedback ? '5. What issues should be avoided based on past experience?' : ''}
 
 Respond with JSON in this format:
 {
@@ -366,10 +528,14 @@ Query: "${request.query}"
 Available Tools (Compact Format):
 ${request.availableTools}
 
+${request.analysisFeedback ? `\nHistorical Context from Past Executions:\n${request.analysisFeedback}\n` : ''}
+
 Select the tools that are most relevant to answering this query. Consider:
 1. What data needs to be retrieved?
 2. What operations need to be performed?
 3. What relationships exist between entities (see 'deps' field)?
+${request.analysisFeedback ? '4. What tools worked well in similar past queries?' : ''}
+${request.analysisFeedback ? '5. What tools caused issues in past executions?' : ''}
 
 Respond with JSON in this format:
 {
@@ -390,6 +556,7 @@ Selected Tools: ${request.selectedTools.join(', ')}
 Request ID: ${request.requestId}
 
 ${request.historicalContext ? `Historical Context:\n${request.historicalContext}\n` : ''}
+${request.analysisFeedback ? `\nAnalysis Feedback from Past Executions:\n${request.analysisFeedback}\n` : ''}
 
 Tool Schemas:
 ${JSON.stringify(request.toolSchemas, null, 2)}
@@ -399,6 +566,8 @@ Generate a detailed execution plan with:
 2. Dependency management between steps (dependsOn must be array of step indices as numbers)
 3. Parallel execution where possible
 4. Clear descriptions for each step
+${request.analysisFeedback ? '5. Apply lessons learned from past executions' : ''}
+${request.analysisFeedback ? '6. Avoid patterns that caused issues in similar queries' : ''}
 
 CRITICAL PARAMETER RULES:
 - For list operations: ALWAYS include page: 1, limit: 10
@@ -417,6 +586,8 @@ Bad: {"uid": "ObjectId of first item"}  // Wrong: placeholder text
 Bad: {"uid": ""}  // Wrong: empty string
 
 IMPORTANT: dependsOn must be an array of numbers representing step indices (e.g., [0, 1] not [{"step": 0}]).
+
+CRITICAL: Generate COMPLETE JSON with all required closing brackets and braces. Do not truncate the response.
 
 Respond with JSON in this format:
 {
