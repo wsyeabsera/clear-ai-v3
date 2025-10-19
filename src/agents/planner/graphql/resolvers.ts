@@ -1,9 +1,9 @@
 // GraphQL resolvers for the Planner Agent
 
-import { SimplePlannerAgent } from '../simple-planner';
+import { PlannerAgent } from '../PlannerAgent';
 
-// Create a singleton instance of the SimplePlannerAgent
-const plannerAgent = new SimplePlannerAgent();
+// Create a singleton instance of the PlannerAgent
+const plannerAgent = new PlannerAgent();
 
 export const plannerResolvers = {
   Mutation: {

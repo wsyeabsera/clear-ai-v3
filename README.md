@@ -1,11 +1,13 @@
-# Waste Management MCP Server & Client
+# Waste Management MCP Server & Client with AI Agents
 
-A complete implementation of Anthropic's Model Context Protocol (MCP) for waste management operations, built with TypeScript, MongoDB, and Apollo GraphQL.
+A complete implementation of Anthropic's Model Context Protocol (MCP) for waste management operations, built with TypeScript, MongoDB, Apollo GraphQL, and intelligent planning/execution agents.
 
 ## 🏗️ Architecture
 
 - **MCP Server**: JSON-RPC stdio transport exposing 20 CRUD tools for waste management entities
 - **Apollo GraphQL Client**: Dynamic tool executor that can call any MCP tool by name
+- **Planner Agent**: Rule-based intelligent planning system that converts natural language to execution plans
+- **Execution Agent**: Advanced orchestration system with dependency resolution, parallel execution, retries, and rollbacks
 - **MongoDB**: Persistent storage with Mongoose schemas for Shipments, Facilities, Contaminants, and Inspections
 - **Command Pattern**: Clean separation of concerns with command objects for each operation
 - **Test-Driven Development**: Comprehensive test coverage with Jest and Supertest
@@ -100,21 +102,57 @@ npm run test:coverage
 - `inspections_delete` - Delete an inspection
 - `inspections_list` - List inspections with filters
 
-## 📝 GraphQL Usage Example
+## 🤖 AI Agents
 
-### Query Available Tools
+### Planner Agent
+
+The Planner Agent converts natural language queries into structured execution plans:
 
 ```graphql
-query {
-  listTools {
-    name
-    description
-    inputSchema
+mutation {
+  createPlan(query: "List all contaminated shipments from last week and create a facility report") {
+    requestId
+    plan {
+      steps {
+        tool
+        params
+        dependsOn
+        parallel
+        description
+      }
+    }
+    status
   }
 }
 ```
 
-### Execute a Tool
+### Execution Agent
+
+The Execution Agent executes plans with advanced orchestration:
+
+```graphql
+mutation {
+  executePlan(planRequestId: "plan-uuid-here") {
+    executionId
+    status
+    totalSteps
+    completedSteps
+    failedSteps
+    results {
+      stepIndex
+      tool
+      status
+      result
+      error
+      retryCount
+    }
+  }
+}
+```
+
+## 📝 GraphQL Usage Examples
+
+### 1. Direct Tool Execution
 
 ```graphql
 mutation {
@@ -137,21 +175,60 @@ mutation {
 }
 ```
 
-### List Shipments
+### 2. Intelligent Planning & Execution
 
 ```graphql
+# Step 1: Create a plan
 mutation {
-  executeTool(
-    name: "shipments_list"
-    params: {
-      client_uid: "client-001"
-      page: 1
-      limit: 10
+  createPlan(query: "Create a facility and then create 3 shipments for that facility") {
+    requestId
+    plan {
+      steps {
+        tool
+        params
+        dependsOn
+        parallel
+        description
+      }
     }
-  ) {
-    success
-    data
-    meta
+  }
+}
+
+# Step 2: Execute the plan
+mutation {
+  executePlan(planRequestId: "plan-uuid-from-step-1") {
+    executionId
+    status
+    results {
+      stepIndex
+      tool
+      status
+      result
+    }
+  }
+}
+```
+
+### 3. Monitor Execution
+
+```graphql
+query {
+  getExecution(executionId: "exec-uuid-here") {
+    executionId
+    status
+    startedAt
+    completedAt
+    totalSteps
+    completedSteps
+    failedSteps
+    results {
+      stepIndex
+      tool
+      status
+      result
+      error
+      retryCount
+    }
   }
 }
 ```
@@ -202,6 +279,21 @@ src/
 │   ├── MCPClient.ts             # MCP client wrapper
 │   ├── DynamicToolExecutor.ts   # Tool execution handler
 │   └── schema.graphql           # GraphQL schema
+├── agents/
+│   ├── planner/                 # Planner Agent
+│   │   ├── PlannerAgent.ts      # Main planner class
+│   │   ├── types.ts             # Type definitions
+│   │   ├── validator.ts          # Plan validation
+│   │   ├── storage.ts           # Plan persistence
+│   │   ├── tool-adapter.ts      # CommandFactory integration
+│   │   └── graphql/             # GraphQL integration
+│   └── executor/                # Execution Agent
+│       ├── ExecutionAgent.ts    # Main executor class
+│       ├── orchestrator.ts      # Dependency resolution
+│       ├── retry-handler.ts     # Retry logic
+│       ├── rollback-handler.ts  # Rollback operations
+│       ├── storage.ts           # Execution persistence
+│       └── graphql/             # GraphQL integration
 └── types/
     └── mcp.ts                   # MCP protocol types
 
@@ -211,6 +303,9 @@ tests/
 │   ├── models/                  # Model tests
 │   ├── commands/                # Command tests
 │   └── integration/             # Integration tests
+└── agents/
+    ├── planner/                 # Planner agent tests
+    └── executor/                # Executor agent tests
 ```
 
 ## 🔧 Development
@@ -233,8 +328,35 @@ npm run dev:client
 - ✅ MCP server with JSON-RPC transport
 - ✅ Apollo GraphQL client
 - ✅ Dynamic tool executor
+- ✅ **Planner Agent** with rule-based planning
+- ✅ **Execution Agent** with orchestration, retries, and rollbacks
+- ✅ **Parallel execution** and dependency resolution
+- ✅ **Comprehensive test suite** for all agents
 - ✅ Integration tests
 - ✅ Database seeding
+
+## 🚀 Key Features
+
+### Planner Agent
+- **Rule-based planning**: Fast, deterministic, no API costs
+- **Natural language processing**: Converts queries to execution plans
+- **Dependency resolution**: Automatically handles step dependencies
+- **Parallel execution**: Identifies steps that can run simultaneously
+- **Plan validation**: Comprehensive validation with error reporting
+
+### Execution Agent
+- **Advanced orchestration**: Manages complex execution flows
+- **Retry logic**: Exponential backoff with intelligent error detection
+- **Rollback support**: Automatic rollback on failure
+- **Parallel execution**: Execute independent steps simultaneously
+- **Progress tracking**: Real-time execution monitoring
+- **Error recovery**: Configurable error handling strategies
+
+### GraphQL API
+- **Unified interface**: Single API for planning and execution
+- **Real-time monitoring**: Track execution progress and status
+- **Flexible configuration**: Customize retry, rollback, and parallel execution
+- **Comprehensive queries**: Get execution history, statistics, and details
 
 ## 🤝 Contributing
 

@@ -6,6 +6,7 @@ import { join } from 'path';
 import { MCPClient } from './MCPClient';
 import { DynamicToolExecutor } from './DynamicToolExecutor';
 import { plannerResolvers } from '../agents/planner/graphql/resolvers';
+import { executorResolvers } from '../agents/executor/graphql/resolvers';
 import { connectToDatabase } from '../server/database/connection';
 import GraphQLJSON from 'graphql-type-json';
 
@@ -28,6 +29,7 @@ const resolvers = {
       return await executor.listAvailableTools();
     },
     ...plannerResolvers.Query,
+    ...executorResolvers.Query,
   },
   
   Mutation: {
@@ -35,6 +37,7 @@ const resolvers = {
       return await executor.executeTool(name, params);
     },
     ...plannerResolvers.Mutation,
+    ...executorResolvers.Mutation,
   },
 };
 

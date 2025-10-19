@@ -14,6 +14,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "jest tests/server/integration/",
+    "test:full-cycle": "jest tests/agents/full-cycle.test.ts",
+    "test:manual": "ts-node scripts/test-full-cycle.ts",
     "seed": "ts-node src/server/database/seed.ts"
   },
   "keywords": [],

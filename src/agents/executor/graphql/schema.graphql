@@ -1,0 +1,123 @@
+# GraphQL schema for the Execution Agent
+
+type Mutation {
+  """
+  Execute a plan by plan request ID
+  """
+  executePlan(
+    planRequestId: String!
+    config: ExecutionConfigInput
+  ): ExecutionResponse!
+  
+  """
+  Cancel a running execution
+  """
+  cancelExecution(executionId: String!): Boolean!
+  
+  """
+  Retry a failed execution
+  """
+  retryExecution(executionId: String!): ExecutionResponse!
+}
+
+type Query {
+  """
+  Get an execution by execution ID
+  """
+  getExecution(executionId: String!): ExecutionResponse
+  
+  """
+  Get executions by plan request ID
+  """
+  getExecutionsByPlanId(planRequestId: String!): [ExecutionSummary!]!
+  
+  """
+  List recent executions
+  """
+  getRecentExecutions(limit: Int): [ExecutionSummary!]!
+  
+  """
+  Get execution statistics
+  """
+  getExecutionStatistics: ExecutionStatistics!
+}
+
+type ExecutionResponse {
+  executionId: String!
+  planRequestId: String!
+  status: ExecutionStatus!
+  startedAt: String
+  completedAt: String
+  totalSteps: Int!
+  completedSteps: Int!
+  failedSteps: Int!
+  results: [ExecutionStepResult!]!
+  error: String
+}
+
+type ExecutionStepResult {
+  stepIndex: Int!
+  tool: String!
+  params: JSON!
+  status: StepStatus!
+  result: JSON
+  error: String
+  startedAt: String
+  completedAt: String
+  retryCount: Int!
+  dependencies: [Int!]!
+}
+
+type ExecutionSummary {
+  executionId: String!
+  planRequestId: String!
+  status: ExecutionStatus!
+  startedAt: String
+  completedAt: String
+  totalSteps: Int!
+  completedSteps: Int!
+  failedSteps: Int!
+  error: String
+}
+
+type ExecutionStatistics {
+  total: Int!
+  byStatus: ExecutionStatusCounts!
+  averageExecutionTime: Float!
+  successRate: Float!
+  averageStepsPerExecution: Float!
+}
+
+type ExecutionStatusCounts {
+  PENDING: Int!
+  RUNNING: Int!
+  COMPLETED: Int!
+  FAILED: Int!
+  ROLLED_BACK: Int!
+}
+
+input ExecutionConfigInput {
+  maxRetries: Int
+  retryDelayMs: Int
+  enableRollback: Boolean
+  continueOnError: Boolean
+  parallelExecutionLimit: Int
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+scalar JSON

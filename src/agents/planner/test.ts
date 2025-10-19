@@ -1,13 +1,13 @@
 // Simple test file for the Planner Agent
 
-import { SimplePlannerAgent } from './simple-planner';
+import { PlannerAgent } from './PlannerAgent';
 
 async function testPlannerAgent() {
   console.log('🧪 Testing Planner Agent...\n');
   
   try {
     // Initialize the planner agent
-    const planner = new SimplePlannerAgent();
+    const planner = new PlannerAgent();
     
     // Test queries
     const testQueries = [
