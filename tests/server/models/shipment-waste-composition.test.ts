@@ -1,18 +1,10 @@
 import mongoose from 'mongoose';
-import { connectToDatabase, disconnectFromDatabase } from '../../../src/server/database/connection';
 import { ShipmentWasteComposition, SEVERITY_ENUM } from '../../../src/server/models/ShipmentWasteComposition';
 import { Shipment } from '../../../src/server/models/Shipment';
 import { Facility } from '../../../src/server/models/Facility';
 import { Bunker } from '../../../src/server/models/Bunker';
 
 describe('ShipmentWasteComposition Model', () => {
-  beforeAll(async () => {
-    await connectToDatabase();
-  });
-
-  afterAll(async () => {
-    await disconnectFromDatabase();
-  });
 
   beforeEach(async () => {
     await ShipmentWasteComposition.deleteMany({});
@@ -28,46 +20,44 @@ describe('ShipmentWasteComposition Model', () => {
 
     beforeEach(async () => {
       facility = new Facility({
-        uid: 'facility-test-001',
         name: 'Test Facility',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       bunker = new Bunker({
-        uid: 'bunker-test-001',
         name: 'Test Bunker',
         facility: facility._id,
         capacity: 1000,
         current_load: 0,
         waste_type: 'Mixed Waste',
         status: 'active',
+        created_at: new Date()
       });
       await bunker.save();
 
       shipment = new Shipment({
-        uid: 'shipment-test-001',
-        client_uid: 'client-test-001',
+        client: new mongoose.Types.ObjectId(),
         license_plate: 'TEST-001',
         facility: facility._id,
+        created_at: new Date()
       });
       await shipment.save();
     });
 
     it('should create a shipment waste composition with required fields', async () => {
       const compositionData = {
-        uid: 'composition-test-001',
-        client_uid: 'client-test-001',
         shipment: shipment._id,
         facility: facility._id,
         bunker: bunker._id,
+        client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       };
 
       const composition = new ShipmentWasteComposition(compositionData);
       const savedComposition = await composition.save();
 
-      expect(savedComposition.uid).toBe('composition-test-001');
-      expect(savedComposition.client_uid).toBe('client-test-001');
       expect(savedComposition.shipment.toString()).toBe(shipment._id.toString());
       expect(savedComposition.facility.toString()).toBe(facility._id.toString());
       expect(savedComposition.bunker.toString()).toBe(bunker._id.toString());
@@ -76,11 +66,10 @@ describe('ShipmentWasteComposition Model', () => {
 
     it('should create a shipment waste composition with all optional fields', async () => {
       const compositionData = {
-        uid: 'composition-test-002',
-        client_uid: 'client-test-001',
         shipment: shipment._id,
         facility: facility._id,
         bunker: bunker._id,
+        client: new mongoose.Types.ObjectId(),
         moisture_level: SEVERITY_ENUM.MEDIUM,
         moisture_comment: 'Moderate moisture content detected',
         dust_load_level: SEVERITY_ENUM.LOW,
@@ -99,6 +88,7 @@ describe('ShipmentWasteComposition Model', () => {
         likely_ewc_code: '20 03 01',
         likely_ewc_description: 'Mixed Municipal Waste',
         likely_ewc_comment: 'Confirmed classification',
+        created_at: new Date()
       };
 
       const composition = new ShipmentWasteComposition(compositionData);
@@ -125,34 +115,14 @@ describe('ShipmentWasteComposition Model', () => {
       await expect(composition.save()).rejects.toThrow();
     });
 
-    it('should not create a shipment waste composition with duplicate UID', async () => {
-      const compositionData = {
-        uid: 'composition-test-duplicate',
-        client_uid: 'client-test-001',
-        shipment: shipment._id,
-        facility: facility._id,
-        bunker: bunker._id,
-      };
-
-      const composition1 = new ShipmentWasteComposition(compositionData);
-      await composition1.save();
-
-      const composition2 = new ShipmentWasteComposition({
-        ...compositionData,
-        moisture_level: SEVERITY_ENUM.HIGH,
-      });
-
-      await expect(composition2.save()).rejects.toThrow();
-    });
-
     it('should validate biogenic content percentage range', async () => {
       const compositionData = {
-        uid: 'composition-test-invalid-percentage',
-        client_uid: 'client-test-001',
         shipment: shipment._id,
         facility: facility._id,
         bunker: bunker._id,
+        client: new mongoose.Types.ObjectId(),
         biogenic_content_percentage: 150, // Invalid: > 100
+        created_at: new Date()
       };
 
       const composition = new ShipmentWasteComposition(compositionData);
@@ -166,62 +136,63 @@ describe('ShipmentWasteComposition Model', () => {
 
     beforeEach(async () => {
       const facility = new Facility({
-        uid: 'facility-test-002',
         name: 'Test Facility 2',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       const bunker = new Bunker({
-        uid: 'bunker-test-002',
         name: 'Test Bunker 2',
         facility: facility._id,
         capacity: 1000,
         waste_type: 'Mixed Waste',
         status: 'active',
+        created_at: new Date()
       });
       await bunker.save();
 
+      const clientId = new mongoose.Types.ObjectId();
       const shipments = await Shipment.insertMany([
         {
-          uid: 'shipment-test-002',
-          client_uid: 'client-test-002',
+          client: clientId,
           license_plate: 'TEST-002',
           facility: facility._id,
+          created_at: new Date()
         },
         {
-          uid: 'shipment-test-003',
-          client_uid: 'client-test-002',
+          client: clientId,
           license_plate: 'TEST-003',
           facility: facility._id,
+          created_at: new Date()
         },
       ]);
 
       compositions = await ShipmentWasteComposition.insertMany([
         {
-          uid: 'composition-test-003',
-          client_uid: 'client-test-002',
           shipment: shipments[0]._id,
           facility: facility._id,
           bunker: bunker._id,
+          client: clientId,
           moisture_level: SEVERITY_ENUM.MEDIUM,
           sulfur_dioxide_risk: SEVERITY_ENUM.LOW,
+          created_at: new Date()
         },
         {
-          uid: 'composition-test-004',
-          client_uid: 'client-test-002',
           shipment: shipments[1]._id,
           facility: facility._id,
           bunker: bunker._id,
+          client: clientId,
           moisture_level: SEVERITY_ENUM.HIGH,
           sulfur_dioxide_risk: SEVERITY_ENUM.MEDIUM,
+          created_at: new Date()
         },
       ]);
     });
 
-    it('should find compositions by client UID', async () => {
-      const foundCompositions = await ShipmentWasteComposition.find({ 
-        client_uid: 'client-test-002' 
+    it('should find compositions by client', async () => {
+      const foundCompositions = await ShipmentWasteComposition.find({
+        client: compositions[0].client
       });
       expect(foundCompositions).toHaveLength(2);
     });
@@ -231,7 +202,7 @@ describe('ShipmentWasteComposition Model', () => {
         moisture_level: SEVERITY_ENUM.MEDIUM 
       });
       expect(foundCompositions).toHaveLength(1);
-      expect(foundCompositions[0].uid).toBe('composition-test-003');
+      expect(foundCompositions[0].moisture_level).toBe(SEVERITY_ENUM.MEDIUM);
     });
 
     it('should find compositions by sulfur dioxide risk', async () => {
@@ -243,12 +214,12 @@ describe('ShipmentWasteComposition Model', () => {
 
     it('should find compositions with mono charge detected', async () => {
       const composition = new ShipmentWasteComposition({
-        uid: 'composition-test-005',
-        client_uid: 'client-test-002',
         shipment: compositions[0].shipment,
         facility: compositions[0].facility,
         bunker: compositions[0].bunker,
+        client: compositions[0].client,
         mono_charge_detected: true,
+        created_at: new Date()
       });
       await composition.save();
 
@@ -264,39 +235,39 @@ describe('ShipmentWasteComposition Model', () => {
 
     beforeEach(async () => {
       const facility = new Facility({
-        uid: 'facility-test-003',
         name: 'Test Facility 3',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       const bunker = new Bunker({
-        uid: 'bunker-test-003',
         name: 'Test Bunker 3',
         facility: facility._id,
         capacity: 1000,
         waste_type: 'Mixed Waste',
         status: 'active',
+        created_at: new Date()
       });
       await bunker.save();
 
       const shipment = new Shipment({
-        uid: 'shipment-test-004',
-        client_uid: 'client-test-003',
+        client: new mongoose.Types.ObjectId(),
         license_plate: 'TEST-004',
         facility: facility._id,
+        created_at: new Date()
       });
       await shipment.save();
 
       composition = new ShipmentWasteComposition({
-        uid: 'composition-test-006',
-        client_uid: 'client-test-003',
         shipment: shipment._id,
         facility: facility._id,
         bunker: bunker._id,
+        client: new mongoose.Types.ObjectId(),
         moisture_level: SEVERITY_ENUM.LOW,
         calorific_value_min: 8.0,
         calorific_value_max: 12.0,
+        created_at: new Date()
       });
       await composition.save();
     });
@@ -319,12 +290,10 @@ describe('ShipmentWasteComposition Model', () => {
 
     it('should soft delete a composition', async () => {
       composition.deleted_at = new Date();
-      composition.deleted_by_uid = 'user-test-001';
       
       const deletedComposition = await composition.save();
 
       expect(deletedComposition.deleted_at).toBeDefined();
-      expect(deletedComposition.deleted_by_uid).toBe('user-test-001');
     });
   });
 });

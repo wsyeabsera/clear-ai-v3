@@ -1,9 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWasteProperty extends Document {
-  uid: string;
-  client_uid: string;
-  contract_uid: string;
   // Waste details
   waste_description?: string;
   waste_amount?: number;
@@ -36,32 +33,15 @@ export interface IWasteProperty extends Document {
   comments?: string;
   // Relationships
   contract: mongoose.Types.ObjectId;
+  client: mongoose.Types.ObjectId;
   // Audit fields
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const WastePropertySchema = new Schema<IWasteProperty>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
-  contract_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   // Waste details
   waste_description: {
     type: String
@@ -168,26 +148,23 @@ const WastePropertySchema = new Schema<IWasteProperty>({
     required: true,
     ref: 'Contract'
   },
+  client: {
+    type: Schema.Types.ObjectId,
+    required: true,
+    ref: 'Client',
+    index: true
+  },
   // Audit fields
   created_at: {
     type: Date,
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

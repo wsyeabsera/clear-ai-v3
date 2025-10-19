@@ -5,7 +5,6 @@ export class CreateWasteCodeCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
       const {
-        uid,
         code,
         name,
         description,
@@ -18,16 +17,11 @@ export class CreateWasteCodeCommand implements ICommand {
       } = params;
 
       // Validate required fields
-      if (!uid || !code || !name) {
-        throw new Error('Missing required fields: uid, code, name');
+      if (!code || !name) {
+        throw new Error('Missing required fields: code, name');
       }
 
-      // Check if waste code already exists by UID or code
-      const existingByUid = await WasteCode.findOne({ uid });
-      if (existingByUid) {
-        throw new Error(`Waste code with UID ${uid} already exists`);
-      }
-
+      // Check if waste code already exists by code
       const existingByCode = await WasteCode.findOne({ code });
       if (existingByCode) {
         throw new Error(`Waste code with code ${code} already exists`);
@@ -35,11 +29,9 @@ export class CreateWasteCodeCommand implements ICommand {
 
       // Create new waste code
       const wasteCodeData: any = {
-        uid,
         code,
         name,
-        created_at: new Date(),
-        created_by_uid: params.client_uid || 'system'
+        created_at: new Date()
       };
 
       // Add optional fields if provided
@@ -56,20 +48,7 @@ export class CreateWasteCodeCommand implements ICommand {
 
       return {
         success: true,
-        data: {
-          uid: savedWasteCode.uid,
-          code: savedWasteCode.code,
-          name: savedWasteCode.name,
-          description: savedWasteCode.description,
-          color_code: savedWasteCode.color_code,
-          code_with_spaces: savedWasteCode.code_with_spaces,
-          calorific_value_min: savedWasteCode.calorific_value_min,
-          calorific_value_max: savedWasteCode.calorific_value_max,
-          calorific_value_comment: savedWasteCode.calorific_value_comment,
-          source: savedWasteCode.source,
-          created_at: savedWasteCode.created_at,
-          created_by_uid: savedWasteCode.created_by_uid
-        },
+        data: savedWasteCode.toObject(),
         message: 'Waste code created successfully'
       };
     } catch (error) {

@@ -20,7 +20,7 @@ const wasteCodeTools: MCPTool[] = [
         calorific_value_comment: { type: 'string', description: 'Calorific value comment' },
         source: { type: 'string', description: 'Data source' },
       },
-      required: ['id', 'code', 'name'],
+      required: ['code', 'name'],
     },
   },
   {

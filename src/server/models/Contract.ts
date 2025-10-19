@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IContract extends Document {
-  facility_uid: string;
-  client_uid: string;
   title?: string;
   external_reference_id?: string;
   external_waste_code_id?: string;
@@ -12,13 +10,9 @@ export interface IContract extends Document {
   tonnage_min?: number;
   tonnage_max?: number;
   tonnage_actual?: number;
-  uid: string;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
   // References to other entities
   client: mongoose.Types.ObjectId;
@@ -33,15 +27,6 @@ export interface IContract extends Document {
 }
 
 const ContractSchema = new Schema<IContract>({
-  facility_uid: {
-    type: String,
-    required: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   title: {
     type: String
   },
@@ -69,30 +54,16 @@ const ContractSchema = new Schema<IContract>({
   tonnage_actual: {
     type: Number
   },
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
   created_at: {
     type: Date,
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number
@@ -101,7 +72,8 @@ const ContractSchema = new Schema<IContract>({
   client: {
     type: Schema.Types.ObjectId,
     required: true,
-    ref: 'Client'
+    ref: 'Client',
+    index: true
   },
   facility: {
     type: Schema.Types.ObjectId,

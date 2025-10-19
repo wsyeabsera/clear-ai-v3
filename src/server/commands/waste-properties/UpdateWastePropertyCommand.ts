@@ -4,21 +4,20 @@ import { WasteProperty } from '../../models/WasteProperty';
 export class UpdateWastePropertyCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid, ...updateData } = params;
+      const { id, ...updateData } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const wasteProperty = await WasteProperty.findOne({ uid });
+      const wasteProperty = await WasteProperty.findById(id);
       if (!wasteProperty) {
-        throw new Error(`Waste property with UID ${uid} not found`);
+        throw new Error(`Waste property with id ${id} not found`);
       }
 
       // Prepare update data
       const updateFields: any = {
-        updated_at: new Date(),
-        updated_by_uid: updateData.client_uid || wasteProperty.created_by_uid
+        updated_at: new Date()
       };
 
       // Add all updatable fields
@@ -37,8 +36,8 @@ export class UpdateWastePropertyCommand implements ICommand {
         }
       });
 
-      const updatedWasteProperty = await WasteProperty.findOneAndUpdate(
-        { uid },
+      const updatedWasteProperty = await WasteProperty.findByIdAndUpdate(
+        id,
         updateFields,
         { new: true, runValidators: true }
       );

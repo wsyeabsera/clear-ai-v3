@@ -1,7 +1,7 @@
 // GraphQL API tests for Planner Agent
 
 import { TestUtils } from './test-utils';
-import { LangChainPlannerAgent } from '../../../src/agents/planner/langchain-planner';
+import { PlannerAgent } from '../../../src/agents/planner/PlannerAgent';
 import { PlanStatus } from '../../../src/agents/planner/types';
 
 // Mock the GraphQL resolvers
@@ -20,7 +20,7 @@ jest.mock('../../../src/agents/planner/graphql/resolvers', () => ({
 }));
 
 describe('GraphQL API Tests for Planner Agent', () => {
-  let plannerAgent: LangChainPlannerAgent;
+  let plannerAgent: PlannerAgent;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeAll(async () => {
@@ -32,7 +32,7 @@ describe('GraphQL API Tests for Planner Agent', () => {
     await TestUtils.setupTestDatabase();
     
     // Create planner agent instance
-    plannerAgent = new LangChainPlannerAgent();
+    plannerAgent = new PlannerAgent();
   });
 
   afterAll(async () => {

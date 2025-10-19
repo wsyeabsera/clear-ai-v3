@@ -6,9 +6,8 @@ export class CreateContractCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
       const {
-        uid,
-        facility_uid,
-        client_uid,
+        facility_id,
+        client_id,
         title,
         external_reference_id,
         external_waste_code_id,
@@ -21,31 +20,21 @@ export class CreateContractCommand implements ICommand {
       } = params;
 
       // Validate required fields
-      if (!uid || !facility_uid || !client_uid) {
-        throw new Error('Missing required fields: uid, facility_uid, client_uid');
-      }
-
-      // Check if contract already exists
-      const existingContract = await Contract.findOne({ uid });
-      if (existingContract) {
-        throw new Error(`Contract with UID ${uid} already exists`);
+      if (!facility_id || !client_id) {
+        throw new Error('Missing required fields: facility_id, client_id');
       }
 
       // Find facility to get ObjectId
-      const facility = await Facility.findOne({ uid: facility_uid });
+      const facility = await Facility.findById(facility_id);
       if (!facility) {
-        throw new Error(`Facility with UID ${facility_uid} not found`);
+        throw new Error(`Facility with id ${facility_id} not found`);
       }
 
       // Create new contract
       const contractData: any = {
-        uid,
-        facility_uid,
-        client_uid,
         facility: facility._id,
-        client: facility._id, // Assuming client is same as facility for now
-        created_at: new Date(),
-        created_by_uid: client_uid
+        client: client_id,
+        created_at: new Date()
       };
 
       // Add optional fields if provided
@@ -64,22 +53,7 @@ export class CreateContractCommand implements ICommand {
 
       return {
         success: true,
-        data: {
-          uid: savedContract.uid,
-          facility_uid: savedContract.facility_uid,
-          client_uid: savedContract.client_uid,
-          title: savedContract.title,
-          external_reference_id: savedContract.external_reference_id,
-          external_waste_code_id: savedContract.external_waste_code_id,
-          start_date: savedContract.start_date,
-          end_date: savedContract.end_date,
-          tonnage_min: savedContract.tonnage_min,
-          tonnage_max: savedContract.tonnage_max,
-          tonnage_actual: savedContract.tonnage_actual,
-          source: savedContract.source,
-          created_at: savedContract.created_at,
-          created_by_uid: savedContract.created_by_uid
-        },
+        data: savedContract.toObject(),
         message: 'Contract created successfully'
       };
     } catch (error) {

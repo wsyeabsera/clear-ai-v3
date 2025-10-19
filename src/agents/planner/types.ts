@@ -95,3 +95,81 @@ export interface PlanGenerationResult {
   reasoning: string;
   confidence: number;
 }
+
+// LLM-powered planning types
+export interface LLMToolSelectionRequest {
+  query: string;
+  availableTools: MCPTool[];
+}
+
+export interface LLMToolSelectionResponse {
+  tools: string[];
+  reasoning: string;
+  entities: string[];
+  confidence: number;
+}
+
+export interface LLMPlanGenerationRequest {
+  query: string;
+  selectedTools: string[];
+  toolSchemas: Record<string, any>;
+  entities: string[];
+  requestId: string;
+}
+
+export interface LLMPlanGenerationResponse {
+  plan: Plan;
+  reasoning: string;
+  confidence: number;
+}
+
+export interface LLMPlanRefinementRequest {
+  query: string;
+  plan: Plan;
+  validationErrors: string[];
+  toolSchemas: Record<string, any>;
+}
+
+export interface LLMPlanRefinementResponse {
+  plan: Plan;
+  reasoning: string;
+  confidence: number;
+}
+
+// Enhanced planning context
+export interface PlanningContext {
+  query: string;
+  requestId: string;
+  availableTools: MCPTool[];
+  selectedTools: string[];
+  entities: string[];
+  toolSchemas: Record<string, any>;
+  previousStepResults?: Array<{
+    stepIndex: number;
+    result: any;
+  }>;
+  refinementCount: number;
+  maxRefinements: number;
+}
+
+// Parameter resolution types
+export interface ParameterResolutionContext {
+  query: string;
+  toolName: string;
+  requiredParams: string[];
+  optionalParams: string[];
+  previousStepResults?: Array<{ stepIndex: number; result: any }>;
+}
+
+export interface ResolvedParameters {
+  [key: string]: any;
+}
+
+// OpenAI service configuration
+export interface OpenAIConfig {
+  apiKey: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  timeout: number;
+}

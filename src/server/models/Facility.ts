@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFacility extends Document {
-  uid: string;
   name: string;
   address?: string;
   city?: string;
@@ -33,20 +32,12 @@ export interface IFacility extends Document {
   rules_waste_item_size_check?: boolean;
   client: mongoose.Types.ObjectId;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const FacilitySchema = new Schema<IFacility>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
   name: {
     type: String,
     required: true
@@ -150,20 +141,11 @@ const FacilitySchema = new Schema<IFacility>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

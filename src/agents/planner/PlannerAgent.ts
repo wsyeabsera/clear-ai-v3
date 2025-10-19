@@ -1,64 +1,99 @@
-// Planner Agent (rule-based, deterministic)
+// Intelligent Planner Agent (LLM-powered)
 
 import { randomUUID } from 'crypto';
-import { PlannerState, Plan, PlanResponse, PlanStatus, MCPTool } from './types';
+import { PlannerState, Plan, PlanResponse, PlanStatus, MCPTool, PlanningContext, LLMToolSelectionRequest, LLMPlanGenerationRequest, LLMPlanRefinementRequest } from './types';
 import { ToolAdapter } from './tool-adapter';
 import { PlanValidator } from './validator';
 import { PlanStorage } from './storage';
+import { OpenAIService, createOpenAIService } from './openai-service';
+import { PromptBuilder } from './prompts';
+import { ParameterResolver } from './parameter-resolver';
 
 export class PlannerAgent {
   private tools: MCPTool[];
+  private openaiService: OpenAIService;
+  private validator: PlanValidator;
   
   constructor() {
     this.tools = ToolAdapter.getAvailableTools();
+    this.openaiService = createOpenAIService();
+    this.validator = new PlanValidator(this.tools);
   }
   
   /**
-   * Create a plan for a given query
+   * Create a plan for a given query using LLM-powered intelligence
    */
   async plan(query: string, llmProvider?: string, skipDatabase: boolean = false): Promise<PlanResponse> {
     const requestId = randomUUID();
     const startTime = new Date();
     
     try {
-      // Step 1: Parse query (simplified)
-      const parsedQuery = this.parseQuery(query);
+      console.log(`🤖 Creating intelligent plan for: "${query}"`);
       
-      // Step 2: Select tools (simplified)
-      const selectedTools = this.selectTools(parsedQuery);
+      // Step 1: Select tools using LLM
+      const toolSelection = await this.selectToolsWithLLM(query);
+      console.log(`🔧 Selected tools: ${toolSelection.tools.join(', ')}`);
+      console.log(`💭 Reasoning: ${toolSelection.reasoning}`);
       
-      // Step 3: Generate plan (simplified)
-      const plan = this.generatePlan(query, selectedTools, requestId);
+      // Step 2: Generate plan using LLM
+      const planGeneration = await this.generatePlanWithLLM(query, toolSelection, requestId);
+      console.log(`📋 Generated plan with ${planGeneration.plan.steps.length} steps`);
       
-      // Step 4: Validate plan
-      const validator = new PlanValidator(this.tools);
-      const validation = validator.validatePlan(plan);
+      // Ensure the plan metadata uses the correct requestId
+      planGeneration.plan.metadata.requestId = requestId;
       
+      // Step 3: Validate plan
+      const validation = this.validator.validatePlan(planGeneration.plan);
+      
+      // Step 4: Refine plan if needed
+      let finalPlan = planGeneration.plan;
+      let refinementCount = 0;
+      const maxRefinements = 3;
+
+      while (!validation.isValid && refinementCount < maxRefinements) {
+        console.log(`🔧 Refining plan (attempt ${refinementCount + 1}/${maxRefinements})`);
+        const refinement = await this.refinePlanWithLLM(query, finalPlan, validation.errors);
+        finalPlan = refinement.plan;
+        
+        // Ensure the refined plan metadata uses the correct requestId
+        finalPlan.metadata.requestId = requestId;
+
+        const newValidation = this.validator.validatePlan(finalPlan);
+        if (newValidation.isValid) {
+          console.log(`✅ Plan refined successfully`);
+          break;
+        }
+
+        refinementCount++;
+      }
+
       const endTime = Date.now();
       const executionTime = endTime - startTime.getTime();
-      
+
       // Step 5: Save plan (only if not skipping database)
       if (!skipDatabase) {
         try {
           await PlanStorage.savePlan(
             requestId,
             query,
-            plan,
-            llmProvider || 'simple',
+            finalPlan,
+            llmProvider || 'openai',
             validation.errors
           );
-          
+
           // Update status
           await PlanStorage.updatePlanStatus(requestId, PlanStatus.COMPLETED, executionTime);
         } catch (dbError) {
           console.warn('Database operation failed, continuing without persistence:', dbError);
         }
       }
-      
+
+      console.log(`✅ Plan created successfully in ${executionTime}ms`);
+
       return {
         requestId,
         query,
-        plan,
+        plan: finalPlan,
         status: PlanStatus.COMPLETED,
         createdAt: startTime.toISOString(),
         executionTimeMs: executionTime,
@@ -66,7 +101,7 @@ export class PlannerAgent {
       };
       
     } catch (error) {
-      console.error('Planner agent error:', error);
+      console.error('❌ Planner agent error:', error);
       
       // Update status to failed (only if not skipping database)
       if (!skipDatabase) {
@@ -76,6 +111,9 @@ export class PlannerAgent {
           console.warn('Database operation failed:', dbError);
         }
       }
+      
+      const endTime = Date.now();
+      const executionTime = endTime - startTime.getTime();
       
       return {
         requestId,
@@ -91,177 +129,74 @@ export class PlannerAgent {
         },
         status: PlanStatus.FAILED,
         createdAt: startTime.toISOString(),
+        executionTimeMs: executionTime,
         validationErrors: [error instanceof Error ? error.message : 'Unknown error']
       };
     }
   }
   
   /**
-   * Parse user query (simplified)
+   * Select tools using LLM intelligence
    */
-  private parseQuery(query: string): any {
-    // Simple keyword-based parsing
-    const lowerQuery = query.toLowerCase();
+  private async selectToolsWithLLM(query: string) {
+    const toolSchemas = this.tools.reduce((acc, tool) => {
+      acc[tool.name] = tool.inputSchema;
+      return acc;
+    }, {} as Record<string, any>);
     
-    return {
-      intent: this.extractIntent(lowerQuery),
-      entities: this.extractEntities(lowerQuery),
-      parameters: this.extractParameters(lowerQuery),
-      complexity: this.determineComplexity(lowerQuery)
+    const availableToolsDescription = ToolAdapter.formatToolsForLLMWithContext(this.tools);
+    
+    const request: LLMToolSelectionRequest = {
+      query,
+      availableTools: this.tools
     };
-  }
-  
-  private extractIntent(query: string): string {
-    if (query.includes('list') || query.includes('get all') || query.includes('show')) {
-      return 'list';
-    } else if (query.includes('create') || query.includes('add') || query.includes('new')) {
-      return 'create';
-    } else if (query.includes('update') || query.includes('edit') || query.includes('modify')) {
-      return 'update';
-    } else if (query.includes('delete') || query.includes('remove')) {
-      return 'delete';
-    } else if (query.includes('get') || query.includes('find') || query.includes('search')) {
-      return 'get';
-    }
-    return 'unknown';
-  }
-  
-  private extractEntities(query: string): string[] {
-    const entities: string[] = [];
-    if (query.includes('shipment')) entities.push('shipments');
-    if (query.includes('facility')) entities.push('facilities');
-    if (query.includes('contaminant')) entities.push('contaminants');
-    if (query.includes('inspection')) entities.push('inspections');
-    if (query.includes('contract')) entities.push('contracts');
-    if (query.includes('client')) entities.push('clients');
-    if (query.includes('waste code')) entities.push('waste_codes');
-    if (query.includes('waste generator')) entities.push('waste_generators');
-    if (query.includes('waste property')) entities.push('waste_properties');
-    if (query.includes('bunker')) entities.push('bunkers');
-    return entities;
-  }
-  
-  private extractParameters(query: string): any {
-    const params: any = {};
     
-    // Date parameters
-    if (query.includes('last week')) {
-      params.date_from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    }
-    if (query.includes('last month')) {
-      params.date_from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    }
-    if (query.includes('today')) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      params.date_from = today.toISOString();
-    }
-    
-    // Location parameters
-    const locationMatch = query.match(/(?:from|in)\s+(\w+)/i);
-    if (locationMatch) {
-      params.location = locationMatch[1];
-    }
-    
-    // Status parameters
-    if (query.includes('contaminated')) {
-      params.status = 'contaminated';
-    }
-    if (query.includes('rejected')) {
-      params.status = 'rejected';
-    }
-    
-    return params;
-  }
-  
-  private determineComplexity(query: string): string {
-    const entityCount = this.extractEntities(query).length;
-    const paramCount = Object.keys(this.extractParameters(query)).length;
-    
-    if (entityCount > 2 || paramCount > 3) {
-      return 'complex';
-    } else if (entityCount > 1 || paramCount > 1) {
-      return 'moderate';
-    }
-    return 'simple';
+    return await this.openaiService.selectTools({
+      query,
+      availableTools: availableToolsDescription,
+      toolSchemas
+    });
   }
   
   /**
-   * Select tools based on parsed query
+   * Generate plan using LLM intelligence
    */
-  private selectTools(parsedQuery: any): string[] {
-    const selectedTools: string[] = [];
-    const { intent, entities } = parsedQuery;
+  private async generatePlanWithLLM(query: string, toolSelection: any, requestId: string) {
+    const toolSchemas = this.tools.reduce((acc, tool) => {
+      acc[tool.name] = tool.inputSchema;
+      return acc;
+    }, {} as Record<string, any>);
     
-    entities.forEach((entity: string) => {
-      const toolPrefix = entity.replace('_', '_');
-      
-      switch (intent) {
-        case 'list':
-          selectedTools.push(`${toolPrefix}_list`);
-          break;
-        case 'create':
-          selectedTools.push(`${toolPrefix}_create`);
-          break;
-        case 'update':
-          selectedTools.push(`${toolPrefix}_update`);
-          break;
-        case 'delete':
-          selectedTools.push(`${toolPrefix}_delete`);
-          break;
-        case 'get':
-          selectedTools.push(`${toolPrefix}_get`);
-          break;
-        default:
-          // Default to list for unknown intents
-          selectedTools.push(`${toolPrefix}_list`);
-      }
-    });
+    const request: LLMPlanGenerationRequest = {
+      query,
+      selectedTools: toolSelection.tools,
+      toolSchemas,
+      entities: toolSelection.entities,
+      requestId
+    };
     
-    // Filter to only include tools that actually exist
-    return selectedTools.filter(toolName => 
-      this.tools.some(tool => tool.name === toolName)
-    );
+    return await this.openaiService.generatePlan(request);
   }
   
   /**
-   * Generate a simple plan
+   * Refine plan using LLM intelligence
    */
-  private generatePlan(query: string, selectedTools: string[], requestId: string): Plan {
-    const steps = selectedTools.map((toolName, index) => {
-      const tool = this.tools.find(t => t.name === toolName);
-      
-      // Generate basic parameters based on tool schema
-      const params: any = {};
-      if (tool?.inputSchema.required) {
-        tool.inputSchema.required.forEach(param => {
-          if (param === 'page') params[param] = 1;
-          else if (param === 'limit') params[param] = 10;
-          else if (param === 'id') params[param] = '${previous_step_result.id}';
-          else params[param] = 'placeholder_value';
-        });
-      }
-      
-      return {
-        tool: toolName,
-        params,
-        dependsOn: index > 0 ? [index - 1] : [],
-        parallel: false,
-        description: `Execute ${toolName} command`
-      };
-    });
+  private async refinePlanWithLLM(query: string, plan: Plan, validationErrors: string[]) {
+    const toolSchemas = this.tools.reduce((acc, tool) => {
+      acc[tool.name] = tool.inputSchema;
+      return acc;
+    }, {} as Record<string, any>);
     
-    return {
-      steps,
-      metadata: {
-        query,
-        requestId,
-        totalSteps: steps.length,
-        parallelSteps: 0
-      }
+    const request: LLMPlanRefinementRequest = {
+      query,
+      plan,
+      validationErrors,
+      toolSchemas
     };
+    
+    return await this.openaiService.refinePlan(request);
   }
-  
+
   /**
    * Get a plan by request ID
    */

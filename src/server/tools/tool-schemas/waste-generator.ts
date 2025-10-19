@@ -30,7 +30,7 @@ const wasteGeneratorTools: MCPTool[] = [
           source: { type: 'string', description: 'Source' },
           notes: { type: 'string', description: 'Additional notes' },
         },
-        required: ['id', 'name', 'client_uid'],
+        required: ['name', 'client_id'],
       },
     },
     {
@@ -90,7 +90,7 @@ const wasteGeneratorTools: MCPTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          client_uid: { type: 'string', description: 'Filter by client ID' },
+          client_id: { type: 'string', description: 'Filter by client ID' },
           name: { type: 'string', description: 'Filter by name' },
           region: { type: 'string', description: 'Filter by region' },
           city: { type: 'string', description: 'Filter by city' },

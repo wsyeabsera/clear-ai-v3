@@ -8,20 +8,19 @@ describe('Shipment Model', () => {
   beforeEach(async () => {
     // Create a test facility first
     facility = new Facility({
-      uid: 'facility-001',
       name: 'Test Facility',
       address: '123 Test St',
       city: 'Test City',
       country: 'Test Country',
-      client: new mongoose.Types.ObjectId()
+      client: new mongoose.Types.ObjectId(),
+      created_at: new Date()
     });
     await facility.save();
   });
 
   it('should create a shipment with valid data', async () => {
     const shipmentData: Partial<IShipment> = {
-      uid: 'shipment-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       license_plate: 'ABC-123',
       entry_timestamp: new Date('2025-01-18T10:00:00Z'),
       entry_weight: 1500.5,
@@ -35,31 +34,19 @@ describe('Shipment Model', () => {
       scale_overwrite: false,
       is_duplicate_check_applied: true,
       facility: facility._id,
+      created_at: new Date()
     };
 
     const shipment = new Shipment(shipmentData);
     const savedShipment = await shipment.save();
 
-    expect(savedShipment.uid).toBe('shipment-001');
     expect(savedShipment.license_plate).toBe('ABC-123');
     expect(savedShipment.entry_weight).toBe(1500.5);
     expect(savedShipment.facility?.toString()).toBe(facility._id.toString());
   });
 
-  it('should require uid field', async () => {
+  it('should require client field', async () => {
     const shipmentData = {
-      client_uid: 'client-001',
-      license_plate: 'ABC-123',
-    };
-
-    const shipment = new Shipment(shipmentData);
-    
-    await expect(shipment.save()).rejects.toThrow();
-  });
-
-  it('should require client_uid field', async () => {
-    const shipmentData = {
-      uid: 'shipment-001',
       license_plate: 'ABC-123',
     };
 
@@ -70,10 +57,10 @@ describe('Shipment Model', () => {
 
   it('should populate facility reference', async () => {
     const shipmentData: Partial<IShipment> = {
-      uid: 'shipment-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       license_plate: 'ABC-123',
       facility: facility._id,
+      created_at: new Date()
     };
 
     const shipment = new Shipment(shipmentData);

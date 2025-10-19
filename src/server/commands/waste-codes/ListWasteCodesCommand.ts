@@ -44,31 +44,14 @@ export class ListWasteCodesCommand implements ICommand {
 
       return {
         success: true,
-        data: {
-          wasteCodes: wasteCodes.map(wasteCode => ({
-            uid: wasteCode.uid,
-            code: wasteCode.code,
-            name: wasteCode.name,
-            description: wasteCode.description,
-            color_code: wasteCode.color_code,
-            code_with_spaces: wasteCode.code_with_spaces,
-            calorific_value_min: wasteCode.calorific_value_min,
-            calorific_value_max: wasteCode.calorific_value_max,
-            calorific_value_comment: wasteCode.calorific_value_comment,
-            source: wasteCode.source,
-            created_at: wasteCode.created_at,
-            created_by_uid: wasteCode.created_by_uid,
-            updated_at: wasteCode.updated_at,
-            updated_by_uid: wasteCode.updated_by_uid
-          })),
-          pagination: {
-            currentPage: page,
-            totalPages,
-            totalCount,
-            hasNextPage,
-            hasPrevPage,
-            limit
-          }
+        data: wasteCodes.map(wasteCode => wasteCode.toObject()),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          hasNextPage,
+          hasPrevPage,
+          limit
         },
         message: `Retrieved ${wasteCodes.length} waste codes successfully`
       };

@@ -8,11 +8,10 @@ export enum SEVERITY_ENUM {
 }
 
 export interface IShipmentWasteComposition extends Document {
-  uid: string;
-  client_uid: string;
   shipment: mongoose.Types.ObjectId;
   facility: mongoose.Types.ObjectId;
   bunker: mongoose.Types.ObjectId;
+  client: mongoose.Types.ObjectId;
   
   // Basic composition fields
   moisture_level?: SEVERITY_ENUM;
@@ -147,30 +146,16 @@ export interface IShipmentWasteComposition extends Document {
   // Additional fields
   gcp_image_path?: string;
   merged_at?: Date;
-  merged_by_uid?: string;
-  merged_from_shipment_uid?: string;
+  merged_from_shipment?: mongoose.Types.ObjectId;
   
   // Audit fields
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const ShipmentWasteCompositionSchema = new Schema<IShipmentWasteComposition>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   shipment: {
     type: Schema.Types.ObjectId,
     required: true,
@@ -185,6 +170,12 @@ const ShipmentWasteCompositionSchema = new Schema<IShipmentWasteComposition>({
     type: Schema.Types.ObjectId,
     required: true,
     ref: 'Bunker'
+  },
+  client: {
+    type: Schema.Types.ObjectId,
+    required: true,
+    ref: 'Client',
+    index: true
   },
   
   // Basic composition fields
@@ -712,11 +703,9 @@ const ShipmentWasteCompositionSchema = new Schema<IShipmentWasteComposition>({
   merged_at: {
     type: Date
   },
-  merged_by_uid: {
-    type: String
-  },
-  merged_from_shipment_uid: {
-    type: String
+  merged_from_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
   
   // Audit fields
@@ -725,20 +714,11 @@ const ShipmentWasteCompositionSchema = new Schema<IShipmentWasteComposition>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

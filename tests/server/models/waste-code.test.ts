@@ -1,15 +1,7 @@
 import mongoose from 'mongoose';
-import { connectToDatabase, disconnectFromDatabase } from '../../../src/server/database/connection';
 import { WasteCode } from '../../../src/server/models/WasteCode';
 
 describe('WasteCode Model', () => {
-  beforeAll(async () => {
-    await connectToDatabase();
-  });
-
-  afterAll(async () => {
-    await disconnectFromDatabase();
-  });
 
   beforeEach(async () => {
     await WasteCode.deleteMany({});
@@ -18,15 +10,14 @@ describe('WasteCode Model', () => {
   describe('WasteCode Creation', () => {
     it('should create a waste code with required fields', async () => {
       const wasteCodeData = {
-        uid: 'waste-code-test-001',
         code: '20 03 01',
         name: 'Mixed Municipal Waste',
+        created_at: new Date()
       };
 
       const wasteCode = new WasteCode(wasteCodeData);
       const savedWasteCode = await wasteCode.save();
 
-      expect(savedWasteCode.uid).toBe('waste-code-test-001');
       expect(savedWasteCode.code).toBe('20 03 01');
       expect(savedWasteCode.name).toBe('Mixed Municipal Waste');
       expect(savedWasteCode.created_at).toBeDefined();
@@ -34,7 +25,6 @@ describe('WasteCode Model', () => {
 
     it('should create a waste code with all optional fields', async () => {
       const wasteCodeData = {
-        uid: 'waste-code-test-002',
         code: '15 01 02',
         name: 'Plastic Packaging',
         description: 'Plastic packaging waste excluding containers',
@@ -44,6 +34,7 @@ describe('WasteCode Model', () => {
         calorific_value_max: 45.0,
         calorific_value_comment: 'High calorific value for plastic waste',
         source: 'European Waste Catalogue',
+        created_at: new Date()
       };
 
       const wasteCode = new WasteCode(wasteCodeData);
@@ -66,39 +57,20 @@ describe('WasteCode Model', () => {
       await expect(wasteCode.save()).rejects.toThrow();
     });
 
-    it('should not create a waste code with duplicate UID', async () => {
-      const wasteCodeData = {
-        uid: 'waste-code-test-duplicate',
-        code: '20 03 01',
-        name: 'Mixed Municipal Waste',
-      };
-
-      const wasteCode1 = new WasteCode(wasteCodeData);
-      await wasteCode1.save();
-
-      const wasteCode2 = new WasteCode({
-        ...wasteCodeData,
-        code: '15 01 02',
-        name: 'Different Name',
-      });
-
-      await expect(wasteCode2.save()).rejects.toThrow();
-    });
-
     it('should not create a waste code with duplicate code', async () => {
       const wasteCodeData = {
-        uid: 'waste-code-test-duplicate-code',
         code: '20 03 01',
         name: 'Mixed Municipal Waste',
+        created_at: new Date()
       };
 
       const wasteCode1 = new WasteCode(wasteCodeData);
       await wasteCode1.save();
 
       const wasteCode2 = new WasteCode({
-        uid: 'waste-code-test-different-uid',
         code: '20 03 01',
         name: 'Different Name',
+        created_at: new Date()
       });
 
       await expect(wasteCode2.save()).rejects.toThrow();
@@ -109,22 +81,22 @@ describe('WasteCode Model', () => {
     beforeEach(async () => {
       const wasteCodes = [
         {
-          uid: 'waste-code-test-003',
           code: '20 03 01',
           name: 'Mixed Municipal Waste',
           description: 'Mixed waste from households',
+          created_at: new Date()
         },
         {
-          uid: 'waste-code-test-004',
           code: '15 01 02',
           name: 'Plastic Packaging',
           description: 'Plastic packaging waste',
+          created_at: new Date()
         },
         {
-          uid: 'waste-code-test-005',
           code: '17 04 05',
           name: 'Iron and Steel',
           description: 'Metal scrap waste',
+          created_at: new Date()
         },
       ];
 
@@ -164,12 +136,12 @@ describe('WasteCode Model', () => {
 
     beforeEach(async () => {
       wasteCode = new WasteCode({
-        uid: 'waste-code-test-006',
         code: '20 03 01',
         name: 'Original Name',
         description: 'Original Description',
         calorific_value_min: 8.0,
         calorific_value_max: 12.0,
+        created_at: new Date()
       });
       await wasteCode.save();
     });
@@ -190,12 +162,10 @@ describe('WasteCode Model', () => {
 
     it('should soft delete a waste code', async () => {
       wasteCode.deleted_at = new Date();
-      wasteCode.deleted_by_uid = 'user-test-001';
       
       const deletedWasteCode = await wasteCode.save();
 
       expect(deletedWasteCode.deleted_at).toBeDefined();
-      expect(deletedWasteCode.deleted_by_uid).toBe('user-test-001');
     });
 
     it('should update calorific value range', async () => {

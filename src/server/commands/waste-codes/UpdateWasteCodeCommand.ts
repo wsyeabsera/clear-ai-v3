@@ -4,21 +4,20 @@ import { WasteCode } from '../../models/WasteCode';
 export class UpdateWasteCodeCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid, ...updateData } = params;
+      const { id, ...updateData } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const wasteCode = await WasteCode.findOne({ uid });
+      const wasteCode = await WasteCode.findById(id);
       if (!wasteCode) {
-        throw new Error(`Waste code with UID ${uid} not found`);
+        throw new Error(`Waste code with id ${id} not found`);
       }
 
       // Prepare update data
       const updateFields: any = {
-        updated_at: new Date(),
-        updated_by_uid: updateData.client_uid || 'system'
+        updated_at: new Date()
       };
 
       // Add fields that are provided
@@ -40,30 +39,15 @@ export class UpdateWasteCodeCommand implements ICommand {
         }
       }
 
-      const updatedWasteCode = await WasteCode.findOneAndUpdate(
-        { uid },
+      const updatedWasteCode = await WasteCode.findByIdAndUpdate(
+        id,
         updateFields,
         { new: true, runValidators: true }
       );
 
       return {
         success: true,
-        data: {
-          uid: updatedWasteCode!.uid,
-          code: updatedWasteCode!.code,
-          name: updatedWasteCode!.name,
-          description: updatedWasteCode!.description,
-          color_code: updatedWasteCode!.color_code,
-          code_with_spaces: updatedWasteCode!.code_with_spaces,
-          calorific_value_min: updatedWasteCode!.calorific_value_min,
-          calorific_value_max: updatedWasteCode!.calorific_value_max,
-          calorific_value_comment: updatedWasteCode!.calorific_value_comment,
-          source: updatedWasteCode!.source,
-          created_at: updatedWasteCode!.created_at,
-          created_by_uid: updatedWasteCode!.created_by_uid,
-          updated_at: updatedWasteCode!.updated_at,
-          updated_by_uid: updatedWasteCode!.updated_by_uid
-        },
+        data: updatedWasteCode!.toObject(),
         message: 'Waste code updated successfully'
       };
     } catch (error) {

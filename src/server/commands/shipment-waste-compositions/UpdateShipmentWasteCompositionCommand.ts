@@ -4,21 +4,20 @@ import { ShipmentWasteComposition, SEVERITY_ENUM } from '../../models/ShipmentWa
 export class UpdateShipmentWasteCompositionCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid, ...updateData } = params;
+      const { id, ...updateData } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const composition = await ShipmentWasteComposition.findOne({ uid });
+      const composition = await ShipmentWasteComposition.findById(id);
       if (!composition) {
-        throw new Error(`Shipment waste composition with UID ${uid} not found`);
+        throw new Error(`Shipment waste composition with id ${id} not found`);
       }
 
       // Prepare update data
       const updateFields: any = {
-        updated_at: new Date(),
-        updated_by_uid: updateData.client_uid || composition.created_by_uid
+        updated_at: new Date()
       };
 
       // Add basic composition fields that are provided
@@ -79,8 +78,8 @@ export class UpdateShipmentWasteCompositionCommand implements ICommand {
       if (updateData.merged_by_uid !== undefined) updateFields.merged_by_uid = updateData.merged_by_uid;
       if (updateData.merged_from_shipment_uid !== undefined) updateFields.merged_from_shipment_uid = updateData.merged_from_shipment_uid;
 
-      const updatedComposition = await ShipmentWasteComposition.findOneAndUpdate(
-        { uid },
+      const updatedComposition = await ShipmentWasteComposition.findByIdAndUpdate(
+        id,
         updateFields,
         { new: true, runValidators: true }
       );

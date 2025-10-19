@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IInspection extends Document {
-  uid: string;
-  client_uid: string;
   additional_categories?: any[];
   akb_reasons?: any[];
   calorific_value?: number;
@@ -24,31 +22,18 @@ export interface IInspection extends Document {
   salvage?: boolean;
   sample_incineration?: boolean;
   solvent_like_smell?: boolean;
-  merged_from_shipment_uid?: string;
+  merged_from_shipment?: mongoose.Types.ObjectId;
   merged_at?: Date;
-  merged_by_uid?: string;
   facility: mongoose.Types.ObjectId;
   shipment: mongoose.Types.ObjectId;
+  client: mongoose.Types.ObjectId;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const InspectionSchema = new Schema<IInspection>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   additional_categories: [{
     type: Schema.Types.Mixed
   }],
@@ -122,14 +107,12 @@ const InspectionSchema = new Schema<IInspection>({
     type: Boolean,
     default: false
   },
-  merged_from_shipment_uid: {
-    type: String
+  merged_from_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
   merged_at: {
     type: Date
-  },
-  merged_by_uid: {
-    type: String
   },
   facility: {
     type: Schema.Types.ObjectId,
@@ -141,25 +124,22 @@ const InspectionSchema = new Schema<IInspection>({
     ref: 'Shipment',
     required: true
   },
+  client: {
+    type: Schema.Types.ObjectId,
+    ref: 'Client',
+    required: true,
+    index: true
+  },
   created_at: {
     type: Date,
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IContaminant extends Document {
-  uid: string;
   is_verified?: boolean;
   is_correct?: boolean;
   reason?: any; // Object type from API
@@ -10,7 +9,7 @@ export interface IContaminant extends Document {
   analysis_notes?: string;
   gcp_image_path?: string;
   gcp_highlight_path?: string;
-  waste_item_uid?: string;
+  waste_item?: mongoose.Types.ObjectId;
   friendly_name?: string;
   local_friendly_name?: string;
   estimated_size?: number;
@@ -23,13 +22,12 @@ export interface IContaminant extends Document {
   entry_timestamp?: Date;
   license_plate?: string;
   captured_datetime?: Date;
-  merged_from_shipment_uid?: string;
+  merged_from_shipment?: mongoose.Types.ObjectId;
   merged_at?: Date;
-  merged_by_uid?: string;
   original_reason?: any;
   original_notes?: string;
   original_local_notes?: string;
-  original_waste_item_uid?: string;
+  original_waste_item?: mongoose.Types.ObjectId;
   original_friendly_name?: string;
   original_local_friendly_name?: string;
   original_estimated_size?: number;
@@ -45,20 +43,12 @@ export interface IContaminant extends Document {
   facility: mongoose.Types.ObjectId;
   shipment: mongoose.Types.ObjectId;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const ContaminantSchema = new Schema<IContaminant>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
   is_verified: {
     type: Boolean,
     default: false
@@ -85,8 +75,9 @@ const ContaminantSchema = new Schema<IContaminant>({
   gcp_highlight_path: {
     type: String
   },
-  waste_item_uid: {
-    type: String
+  waste_item: {
+    type: Schema.Types.ObjectId,
+    ref: 'WasteItem'
   },
   friendly_name: {
     type: String
@@ -124,14 +115,12 @@ const ContaminantSchema = new Schema<IContaminant>({
   captured_datetime: {
     type: Date
   },
-  merged_from_shipment_uid: {
-    type: String
+  merged_from_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
   merged_at: {
     type: Date
-  },
-  merged_by_uid: {
-    type: String
   },
   original_reason: {
     type: Schema.Types.Mixed
@@ -142,8 +131,9 @@ const ContaminantSchema = new Schema<IContaminant>({
   original_local_notes: {
     type: String
   },
-  original_waste_item_uid: {
-    type: String
+  original_waste_item: {
+    type: Schema.Types.ObjectId,
+    ref: 'WasteItem'
   },
   original_friendly_name: {
     type: String
@@ -198,20 +188,11 @@ const ContaminantSchema = new Schema<IContaminant>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

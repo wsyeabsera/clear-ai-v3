@@ -32,7 +32,6 @@ async function seed() {
     console.log('Creating facilities...');
     const facilities = await Facility.insertMany([
       {
-        uid: faker.string.uuid(),
         name: faker.company.name() + ' Waste Processing Facility',
         address: faker.location.streetAddress(),
         city: faker.location.city(),
@@ -52,7 +51,6 @@ async function seed() {
         client: new mongoose.Types.ObjectId(),
       },
       {
-        uid: faker.string.uuid(),
         name: faker.company.name() + ' Sorting Center',
         address: faker.location.streetAddress(),
         city: faker.location.city(),
@@ -75,8 +73,7 @@ async function seed() {
     console.log('Creating shipments...');
     const shipments = await Shipment.insertMany([
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
+        client: new mongoose.Types.ObjectId(),
         license_plate: faker.vehicle.vrm(),
         entry_timestamp: faker.date.recent({ days: 30 }),
         entry_weight: faker.number.int({ min: 5000, max: 25000 }),
@@ -91,8 +88,7 @@ async function seed() {
         facility: facilities[0]._id,
       },
       {
-        uid: 'shipment-002',
-        client_uid: 'client-001',
+        client: new mongoose.Types.ObjectId(),
         license_plate: 'HH-RC-5678',
         entry_timestamp: new Date('2025-01-18T10:00:00Z'),
         entry_weight: 8500,
@@ -107,8 +103,7 @@ async function seed() {
         facility: facilities[1]._id,
       },
       {
-        uid: 'shipment-003',
-        client_uid: 'client-002',
+        client: new mongoose.Types.ObjectId(),
         license_plate: 'B-WM-9999',
         entry_timestamp: new Date('2025-01-18T14:00:00Z'),
         entry_weight: 12000,
@@ -123,14 +118,13 @@ async function seed() {
     console.log('Creating contaminants...');
     await Contaminant.insertMany([
       {
-        uid: 'contaminant-001',
         is_verified: true,
         is_correct: true,
         notes: 'Plastic bottle detected in metal waste',
         analysis_notes: 'PET plastic, estimated 500ml bottle',
         gcp_image_path: '/images/contaminant-001.jpg',
         gcp_highlight_path: '/images/contaminant-001-highlight.jpg',
-        waste_item_uid: 'waste-item-plastic-001',
+        waste_item: new mongoose.Types.ObjectId(),
         friendly_name: 'Plastic Bottle',
         local_friendly_name: 'Plastikflasche',
         estimated_size: 50,
@@ -148,13 +142,12 @@ async function seed() {
         shipment: shipments[0]._id,
       },
       {
-        uid: 'contaminant-002',
         is_verified: false,
         is_correct: false,
         notes: 'Possible hazardous material detected',
         analysis_notes: 'Requires further inspection - chemical container',
         gcp_image_path: '/images/contaminant-002.jpg',
-        waste_item_uid: 'waste-item-chemical-001',
+        waste_item: new mongoose.Types.ObjectId(),
         friendly_name: 'Chemical Container',
         estimated_size: 200,
         material: 'Unknown Chemical',
@@ -174,8 +167,6 @@ async function seed() {
     console.log('Creating inspections...');
     await Inspection.insertMany([
       {
-        uid: 'inspection-001',
-        client_uid: 'client-001',
         calorific_value: 18.5,
         comments: 'Standard waste inspection completed. Minor contamination detected.',
         consistency: 'Mixed solid waste',
@@ -196,10 +187,10 @@ async function seed() {
         solvent_like_smell: false,
         facility: facilities[0]._id,
         shipment: shipments[0]._id,
+        client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
       {
-        uid: 'inspection-002',
-        client_uid: 'client-001',
         calorific_value: 22.3,
         comments: 'Hazardous material suspected. Delivery rejected pending further analysis.',
         consistency: 'Industrial plastic waste',
@@ -220,10 +211,10 @@ async function seed() {
         solvent_like_smell: true,
         facility: facilities[1]._id,
         shipment: shipments[1]._id,
+        client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
       {
-        uid: 'inspection-003',
-        client_uid: 'client-002',
         calorific_value: 12.1,
         comments: 'Metal waste inspection - all clear',
         consistency: 'Scrap metal',
@@ -244,13 +235,14 @@ async function seed() {
         solvent_like_smell: false,
         facility: facilities[0]._id,
         shipment: shipments[2]._id,
+        client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating waste codes...');
     const wasteCodes = await WasteCode.insertMany([
       {
-        uid: 'waste-code-001',
         code: '20 03 01',
         name: 'Mixed Municipal Waste',
         description: 'Mixed waste from households and similar establishments',
@@ -260,9 +252,9 @@ async function seed() {
         calorific_value_max: 12.0,
         calorific_value_comment: 'Typical range for mixed municipal waste',
         source: 'European Waste Catalogue',
+        created_at: new Date()
       },
       {
-        uid: 'waste-code-002',
         code: '15 01 02',
         name: 'Plastic Packaging',
         description: 'Plastic packaging waste excluding containers',
@@ -272,9 +264,9 @@ async function seed() {
         calorific_value_max: 45.0,
         calorific_value_comment: 'High calorific value for plastic waste',
         source: 'European Waste Catalogue',
+        created_at: new Date()
       },
       {
-        uid: 'waste-code-003',
         code: '17 04 05',
         name: 'Iron and Steel',
         description: 'Iron and steel scrap metal',
@@ -284,14 +276,13 @@ async function seed() {
         calorific_value_max: 1.0,
         calorific_value_comment: 'Minimal calorific value for metal waste',
         source: 'European Waste Catalogue',
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating waste generators...');
     const wasteGenerators = await WasteGenerator.insertMany([
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
         name: faker.company.name() + ' Construction Site',
         external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
         region: faker.location.state(),
@@ -311,10 +302,9 @@ async function seed() {
         source: 'Construction',
         notes: faker.lorem.paragraph(),
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
         name: faker.company.name() + ' Industrial Park',
         external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
         region: faker.location.state(),
@@ -334,10 +324,9 @@ async function seed() {
         source: 'Industrial',
         notes: faker.lorem.paragraph(),
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
         name: faker.company.name() + ' Scrap Yard',
         external_reference_id: faker.string.alphanumeric({ length: 12, casing: 'upper' }),
         region: faker.location.state(),
@@ -357,15 +346,13 @@ async function seed() {
         source: 'Recycling',
         notes: faker.lorem.paragraph(),
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating contracts...');
     const contracts = await Contract.insertMany([
       {
-        uid: 'contract-001',
-        facility_uid: 'facility-001',
-        client_uid: 'client-001',
         title: 'Municipal Waste Processing Contract 2025',
         external_reference_id: 'CONTRACT-2025-001',
         external_waste_code_id: '20 03 01',
@@ -379,11 +366,9 @@ async function seed() {
         client: facilities[0]._id, // Simplified for seed data
         waste_generator: wasteGenerators[0]._id,
         waste_code: wasteCodes[0]._id,
+        created_at: new Date()
       },
       {
-        uid: 'contract-002',
-        facility_uid: 'facility-002',
-        client_uid: 'client-001',
         title: 'Plastic Waste Processing Agreement',
         external_reference_id: 'CONTRACT-2025-002',
         external_waste_code_id: '15 01 02',
@@ -397,47 +382,46 @@ async function seed() {
         client: facilities[1]._id,
         waste_generator: wasteGenerators[1]._id,
         waste_code: wasteCodes[1]._id,
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating bunkers...');
     const bunkers = await Bunker.insertMany([
       {
-        uid: 'bunker-001',
         name: 'Bunker A - Mixed Waste',
         facility: facilities[0]._id,
         capacity: 1000,
         current_load: 250,
         waste_type: 'Mixed Municipal Waste',
         status: 'active',
+        created_at: new Date()
       },
       {
-        uid: 'bunker-002',
         name: 'Bunker B - Plastic Waste',
         facility: facilities[1]._id,
         capacity: 800,
         current_load: 150,
         waste_type: 'Plastic Packaging',
         status: 'active',
+        created_at: new Date()
       },
       {
-        uid: 'bunker-003',
         name: 'Bunker C - Metal Waste',
         facility: facilities[0]._id,
         capacity: 1200,
         current_load: 400,
         waste_type: 'Iron and Steel',
         status: 'active',
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating waste properties...');
     const wasteProperties = await WasteProperty.insertMany([
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
-        contract_uid: contracts[0].uid,
         contract: contracts[0]._id,
+        client: new mongoose.Types.ObjectId(),
         waste_description: 'Mixed municipal waste from residential areas',
         waste_amount: faker.number.float({ min: 100, max: 5000, fractionDigits: 2 }),
         waste_designation: 'Non-hazardous',
@@ -462,12 +446,11 @@ async function seed() {
         zinc: faker.number.float({ min: 100, max: 500, fractionDigits: 1 }),
         phosphate: faker.number.float({ min: 10, max: 50, fractionDigits: 1 }),
         comments: faker.lorem.sentence(),
+        created_at: new Date()
       },
       {
-        uid: faker.string.uuid(),
-        client_uid: faker.string.uuid(),
-        contract_uid: contracts[1].uid,
         contract: contracts[1]._id,
+        client: new mongoose.Types.ObjectId(),
         waste_description: 'Plastic packaging waste from industrial sources',
         waste_amount: faker.number.float({ min: 100, max: 2000, fractionDigits: 2 }),
         waste_designation: 'Non-hazardous',
@@ -492,17 +475,17 @@ async function seed() {
         zinc: faker.number.float({ min: 50, max: 200, fractionDigits: 1 }),
         phosphate: faker.number.float({ min: 5, max: 20, fractionDigits: 1 }),
         comments: faker.lorem.sentence(),
+        created_at: new Date()
       },
     ]);
 
     console.log('Creating shipment waste compositions...');
     await ShipmentWasteComposition.insertMany([
       {
-        uid: 'composition-001',
-        client_uid: 'client-001',
         shipment: shipments[0]._id,
         facility: facilities[0]._id,
         bunker: bunkers[0]._id,
+        client: new mongoose.Types.ObjectId(),
         moisture_level: SEVERITY_ENUM.MEDIUM,
         moisture_comment: 'Moderate moisture content detected',
         dust_load_level: SEVERITY_ENUM.LOW,
@@ -539,13 +522,13 @@ async function seed() {
         iron_fe: faker.number.float({ min: 1, max: 4, fractionDigits: 1 }),
         iron_fe_comment: faker.lorem.sentence(),
         gcp_image_path: faker.image.url(),
+        created_at: new Date()
       },
       {
-        uid: 'composition-002',
-        client_uid: 'client-001',
         shipment: shipments[1]._id,
         facility: facilities[1]._id,
         bunker: bunkers[1]._id,
+        client: new mongoose.Types.ObjectId(),
         moisture_level: SEVERITY_ENUM.LOW,
         moisture_comment: 'Low moisture content for plastic waste',
         dust_load_level: SEVERITY_ENUM.NONE,
@@ -576,13 +559,13 @@ async function seed() {
         films_dirty_pe_pp: faker.number.float({ min: 3, max: 10, fractionDigits: 1 }),
         films_dirty_pe_pp_comment: faker.lorem.sentence(),
         gcp_image_path: faker.image.url(),
+        created_at: new Date()
       },
       {
-        uid: 'composition-003',
-        client_uid: 'client-002',
         shipment: shipments[2]._id,
         facility: facilities[0]._id,
         bunker: bunkers[2]._id,
+        client: new mongoose.Types.ObjectId(),
         moisture_level: SEVERITY_ENUM.LOW,
         moisture_comment: 'Very low moisture content',
         dust_load_level: SEVERITY_ENUM.MEDIUM,
@@ -611,6 +594,7 @@ async function seed() {
         vehicle_parts_pipes: faker.number.float({ min: 1, max: 5, fractionDigits: 1 }),
         vehicle_parts_pipes_comment: faker.lorem.sentence(),
         gcp_image_path: faker.image.url(),
+        created_at: new Date()
       },
     ]);
 

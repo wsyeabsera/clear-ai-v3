@@ -4,19 +4,19 @@ import { Facility } from '../../models/Facility';
 export class GetFacilityCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
     try {
-      if (!params.uid) {
+      if (!params.id) {
         return {
           success: false,
-          error: 'Missing required field: uid',
+          error: 'Missing required field: id',
         };
       }
 
-      const facility = await Facility.findOne({ uid: params.uid });
+      const facility = await Facility.findById(params.id).populate('client');
       
       if (!facility) {
         return {
           success: false,
-          error: `Facility with uid '${params.uid}' not found`,
+          error: `Facility with id '${params.id}' not found`,
         };
       }
 

@@ -103,4 +103,173 @@ ${formattedTools}
              crudPatterns.some(pattern => toolName.includes(pattern));
     });
   }
+
+  /**
+   * Get tools with enhanced context for LLM planning
+   */
+  static getToolsWithContext(tools: MCPTool[]): string {
+    const categories = this.getToolsByCategory(tools);
+    let context = 'Available Tools with Context:\n\n';
+    
+    for (const [category, categoryTools] of Object.entries(categories)) {
+      context += `${category.toUpperCase()}:\n`;
+      context += `  Description: ${this.getCategoryDescription(category)}\n`;
+      context += `  Common Usage: ${this.getCategoryUsagePattern(category)}\n`;
+      context += `  Tools:\n`;
+      
+      categoryTools.forEach(tool => {
+        context += `    - ${tool.name}: ${tool.description}\n`;
+        context += `      Required: ${tool.inputSchema.required?.join(', ') || 'none'}\n`;
+        context += `      Optional: ${Object.keys(tool.inputSchema.properties).filter(p => !tool.inputSchema.required?.includes(p)).join(', ') || 'none'}\n`;
+      });
+      
+      context += '\n';
+    }
+    
+    return context;
+  }
+
+  /**
+   * Get category description
+   */
+  private static getCategoryDescription(category: string): string {
+    const descriptions: Record<string, string> = {
+      'clients': 'Client management - stores customer information and relationships',
+      'facilities': 'Facility management - physical locations for waste processing',
+      'shipments': 'Shipment tracking - waste transport and delivery records',
+      'contaminants': 'Contaminant tracking - harmful substances found in waste',
+      'inspections': 'Inspection records - quality control and compliance checks',
+      'contracts': 'Contract management - agreements and service contracts',
+      'waste_codes': 'Waste code classifications - standardized waste categorization',
+      'waste_generators': 'Waste generator records - entities producing waste',
+      'waste_properties': 'Waste property details - physical and chemical properties',
+      'bunkers': 'Bunker management - storage containers for waste'
+    };
+    
+    return descriptions[category] || 'Entity management operations';
+  }
+
+  /**
+   * Get category usage patterns
+   */
+  private static getCategoryUsagePattern(category: string): string {
+    const patterns: Record<string, string> = {
+      'clients': 'list → get → create/update/delete',
+      'facilities': 'list → get → create/update/delete',
+      'shipments': 'list → get → create/update/delete (often filtered by facility_id, client_id)',
+      'contaminants': 'list → get → create/update/delete (often linked to shipments)',
+      'inspections': 'list → get → create/update/delete (requires shipment_id, facility_id)',
+      'contracts': 'list → get → create/update/delete (linked to clients)',
+      'waste_codes': 'list → get → create/update/delete (reference data)',
+      'waste_generators': 'list → get → create/update/delete (linked to clients)',
+      'waste_properties': 'list → get → create/update/delete (linked to waste_codes)',
+      'bunkers': 'list → get → create/update/delete (requires facility_id)'
+    };
+    
+    return patterns[category] || 'Standard CRUD operations';
+  }
+
+  /**
+   * Get data flow relationships between tools
+   */
+  static getDataFlowRelationships(tools: MCPTool[]): Record<string, string[]> {
+    const relationships: Record<string, string[]> = {};
+    
+    tools.forEach(tool => {
+      const toolName = tool.name;
+      const dependencies: string[] = [];
+      
+      // Analyze required parameters to find dependencies
+      if (tool.inputSchema.required) {
+        tool.inputSchema.required.forEach(param => {
+          if (param.endsWith('_id')) {
+            const entity = param.replace('_id', '');
+            const sourceTool = `${entity}s_list`;
+            if (tools.some(t => t.name === sourceTool)) {
+              dependencies.push(sourceTool);
+            }
+          }
+        });
+      }
+      
+      relationships[toolName] = dependencies;
+    });
+    
+    return relationships;
+  }
+
+  /**
+   * Get tools formatted for LLM with enhanced context
+   */
+  static formatToolsForLLMWithContext(tools: MCPTool[]): string {
+    const context = this.getToolsWithContext(tools);
+    const relationships = this.getDataFlowRelationships(tools);
+    
+    let result = context + '\nData Flow Relationships:\n';
+    for (const [tool, deps] of Object.entries(relationships)) {
+      if (deps.length > 0) {
+        result += `  ${tool} depends on: ${deps.join(', ')}\n`;
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Find tools that can provide data for a given parameter
+   */
+  static findToolsForParameter(tools: MCPTool[], parameter: string): MCPTool[] {
+    const entity = parameter.replace('_id', '');
+    const listTool = `${entity}s_list`;
+    const getTool = `${entity}s_get`;
+    
+    return tools.filter(tool => 
+      tool.name === listTool || tool.name === getTool
+    );
+  }
+
+  /**
+   * Get parameter examples for a tool
+   */
+  static getParameterExamples(tool: MCPTool): Record<string, any> {
+    const examples: Record<string, any> = {};
+    
+    if (tool.inputSchema.properties) {
+      for (const [param, schema] of Object.entries(tool.inputSchema.properties)) {
+        if (param === 'page') {
+          examples[param] = 1;
+        } else if (param === 'limit') {
+          examples[param] = 50;
+        } else if (param.endsWith('_id')) {
+          examples[param] = '${step_0.result.items[0].id}';
+        } else if (param.includes('date')) {
+          examples[param] = '2024-01-01T00:00:00.000Z';
+        } else if (param === 'status') {
+          examples[param] = 'active';
+        } else if (param === 'name') {
+          examples[param] = 'Example Name';
+        } else if (typeof schema === 'object' && 'type' in schema) {
+          switch (schema.type) {
+            case 'string':
+              examples[param] = 'example_value';
+              break;
+            case 'number':
+              examples[param] = 1;
+              break;
+            case 'boolean':
+              examples[param] = true;
+              break;
+            case 'array':
+              examples[param] = [];
+              break;
+            case 'object':
+              examples[param] = {};
+              break;
+          }
+        }
+      }
+    }
+    
+    return examples;
+  }
 }

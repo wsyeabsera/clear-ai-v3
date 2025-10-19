@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IShipment extends Document {
-  uid: string;
-  client_uid: string;
   license_plate: string;
   entry_timestamp?: Date;
   entry_weight?: number;
@@ -15,32 +13,19 @@ export interface IShipment extends Document {
   source?: string;
   scale_overwrite?: boolean;
   is_duplicate_check_applied?: boolean;
-  merged_to_shipment_uid?: string;
-  merged_from_shipment_uid?: string;
+  merged_to_shipment?: mongoose.Types.ObjectId;
+  merged_from_shipment?: mongoose.Types.ObjectId;
   merged_at?: Date;
-  merged_by_uid?: string;
   facility?: mongoose.Types.ObjectId;
   contract?: mongoose.Types.ObjectId;
+  client: mongoose.Types.ObjectId;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const ShipmentSchema = new Schema<IShipment>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   license_plate: {
     type: String,
     required: true
@@ -80,17 +65,16 @@ const ShipmentSchema = new Schema<IShipment>({
     type: Boolean,
     default: false
   },
-  merged_to_shipment_uid: {
-    type: String
+  merged_to_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
-  merged_from_shipment_uid: {
-    type: String
+  merged_from_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
   merged_at: {
     type: Date
-  },
-  merged_by_uid: {
-    type: String
   },
   facility: {
     type: Schema.Types.ObjectId,
@@ -100,25 +84,22 @@ const ShipmentSchema = new Schema<IShipment>({
     type: Schema.Types.ObjectId,
     ref: 'Contract'
   },
+  client: {
+    type: Schema.Types.ObjectId,
+    ref: 'Client',
+    required: true,
+    index: true
+  },
   created_at: {
     type: Date,
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

@@ -1,16 +1,8 @@
 import mongoose from 'mongoose';
-import { connectToDatabase, disconnectFromDatabase } from '../../../src/server/database/connection';
 import { Contract } from '../../../src/server/models/Contract';
 import { Facility } from '../../../src/server/models/Facility';
 
 describe('Contract Model', () => {
-  beforeAll(async () => {
-    await connectToDatabase();
-  });
-
-  afterAll(async () => {
-    await disconnectFromDatabase();
-  });
 
   beforeEach(async () => {
     await Contract.deleteMany({});
@@ -20,43 +12,35 @@ describe('Contract Model', () => {
   describe('Contract Creation', () => {
     it('should create a contract with required fields', async () => {
       const facility = new Facility({
-        uid: 'facility-test-001',
         name: 'Test Facility',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       const contractData = {
-        uid: 'contract-test-001',
-        facility_uid: 'facility-test-001',
-        client_uid: 'client-test-001',
         title: 'Test Contract',
         facility: facility._id,
         client: facility._id,
+        created_at: new Date()
       };
 
       const contract = new Contract(contractData);
       const savedContract = await contract.save();
 
-      expect(savedContract.uid).toBe('contract-test-001');
-      expect(savedContract.facility_uid).toBe('facility-test-001');
-      expect(savedContract.client_uid).toBe('client-test-001');
       expect(savedContract.title).toBe('Test Contract');
       expect(savedContract.created_at).toBeDefined();
     });
 
     it('should create a contract with all optional fields', async () => {
       const facility = new Facility({
-        uid: 'facility-test-002',
         name: 'Test Facility 2',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       const contractData = {
-        uid: 'contract-test-002',
-        facility_uid: 'facility-test-002',
-        client_uid: 'client-test-002',
         title: 'Comprehensive Test Contract',
         external_reference_id: 'EXT-REF-001',
         external_waste_code_id: '20 03 01',
@@ -68,6 +52,7 @@ describe('Contract Model', () => {
         source: 'Test Source',
         facility: facility._id,
         client: facility._id,
+        created_at: new Date()
       };
 
       const contract = new Contract(contractData);
@@ -91,74 +76,67 @@ describe('Contract Model', () => {
       await expect(contract.save()).rejects.toThrow();
     });
 
-    it('should not create a contract with duplicate UID', async () => {
+    it('should not create a contract without required fields', async () => {
       const facility = new Facility({
-        uid: 'facility-test-003',
         name: 'Test Facility 3',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       const contractData = {
-        uid: 'contract-test-duplicate',
-        facility_uid: 'facility-test-003',
-        client_uid: 'client-test-003',
         facility: facility._id,
-        client: facility._id,
+        // Missing client field
       };
 
-      const contract1 = new Contract(contractData);
-      await contract1.save();
-
-      const contract2 = new Contract({
-        ...contractData,
-        title: 'Duplicate Contract',
-      });
-
-      await expect(contract2.save()).rejects.toThrow();
+      const contract = new Contract(contractData);
+      await expect(contract.save()).rejects.toThrow();
     });
   });
 
   describe('Contract Queries', () => {
+    let facility: any;
+    let client1: any;
+    let client2: any;
+
     beforeEach(async () => {
-      const facility = new Facility({
-        uid: 'facility-test-004',
+      facility = new Facility({
         name: 'Test Facility 4',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
+      client1 = new mongoose.Types.ObjectId();
+      client2 = new mongoose.Types.ObjectId();
+
       const contracts = [
         {
-          uid: 'contract-test-004',
-          facility_uid: 'facility-test-004',
-          client_uid: 'client-test-004',
           title: 'Contract 1',
           tonnage_actual: 1000,
           facility: facility._id,
-          client: facility._id,
+          client: client1,
+          created_at: new Date()
         },
         {
-          uid: 'contract-test-005',
-          facility_uid: 'facility-test-004',
-          client_uid: 'client-test-005',
           title: 'Contract 2',
           tonnage_actual: 2000,
           facility: facility._id,
-          client: facility._id,
+          client: client2,
+          created_at: new Date()
         },
       ];
 
       await Contract.insertMany(contracts);
     });
 
-    it('should find contracts by facility UID', async () => {
-      const contracts = await Contract.find({ facility_uid: 'facility-test-004' });
+    it('should find contracts by facility', async () => {
+      const contracts = await Contract.find({ facility: facility._id });
       expect(contracts).toHaveLength(2);
     });
 
-    it('should find contracts by client UID', async () => {
-      const contracts = await Contract.find({ client_uid: 'client-test-004' });
+    it('should find contracts by client', async () => {
+      const contracts = await Contract.find({ client: client1 });
       expect(contracts).toHaveLength(1);
     });
 
@@ -174,20 +152,18 @@ describe('Contract Model', () => {
 
     beforeEach(async () => {
       const facility = new Facility({
-        uid: 'facility-test-005',
         name: 'Test Facility 5',
         client: new mongoose.Types.ObjectId(),
+        created_at: new Date()
       });
       await facility.save();
 
       contract = new Contract({
-        uid: 'contract-test-006',
-        facility_uid: 'facility-test-005',
-        client_uid: 'client-test-006',
         title: 'Original Title',
         tonnage_actual: 1000,
         facility: facility._id,
         client: facility._id,
+        created_at: new Date()
       });
       await contract.save();
     });
@@ -206,12 +182,10 @@ describe('Contract Model', () => {
 
     it('should soft delete a contract', async () => {
       contract.deleted_at = new Date();
-      contract.deleted_by_uid = 'user-test-001';
       
       const deletedContract = await contract.save();
 
       expect(deletedContract.deleted_at).toBeDefined();
-      expect(deletedContract.deleted_by_uid).toBe('user-test-001');
     });
   });
 });

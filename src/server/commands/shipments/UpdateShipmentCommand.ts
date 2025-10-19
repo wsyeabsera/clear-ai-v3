@@ -1,37 +1,29 @@
 import { ICommand, CommandResult } from '../ICommand';
 import { Shipment } from '../../models/Shipment';
 import { Facility } from '../../models/Facility';
+import { Client } from '../../models/Client';
 
 export class UpdateShipmentCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
     try {
-      if (!params.uid) {
+      if (!params.id) {
         return {
           success: false,
-          error: 'Missing required field: uid',
+          error: 'Missing required field: id',
         };
       }
 
-      const shipment = await Shipment.findOne({ uid: params.uid });
-      
-      if (!shipment) {
-        return {
-          success: false,
-          error: `Shipment with uid '${params.uid}' not found`,
-        };
-      }
-
-      // Handle facility update if facility_uid is provided
-      if (params.facility_uid) {
-        const facility = await Facility.findOne({ uid: params.facility_uid });
+      // Handle facility update if facility_id is provided
+      if (params.facility_id) {
+        const facility = await Facility.findById(params.facility_id);
         if (!facility) {
           return {
             success: false,
-            error: `Facility with uid '${params.facility_uid}' not found`,
+            error: `Facility with id '${params.facility_id}' not found`,
           };
         }
         params.facility = facility._id;
-        delete params.facility_uid;
+        delete params.facility_id;
       }
 
       // Convert date strings to Date objects
@@ -46,15 +38,22 @@ export class UpdateShipmentCommand implements ICommand {
       }
 
       // Update the shipment
-      const updatedShipment = await Shipment.findOneAndUpdate(
-        { uid: params.uid },
+      const updatedShipment = await Shipment.findByIdAndUpdate(
+        params.id,
         { $set: params },
         { new: true, runValidators: true }
       ).populate('facility');
 
+      if (!updatedShipment) {
+        return {
+          success: false,
+          error: `Shipment with id '${params.id}' not found`,
+        };
+      }
+
       return {
         success: true,
-        data: updatedShipment?.toObject(),
+        data: updatedShipment.toObject(),
         message: 'Shipment updated successfully',
       };
     } catch (error: any) {

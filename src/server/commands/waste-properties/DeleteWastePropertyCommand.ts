@@ -4,25 +4,33 @@ import { WasteProperty } from '../../models/WasteProperty';
 export class DeleteWastePropertyCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid } = params;
+      const { id } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const wasteProperty = await WasteProperty.findOne({ uid });
+      const wasteProperty = await WasteProperty.findById(id);
       if (!wasteProperty) {
-        throw new Error(`Waste property with UID ${uid} not found`);
+        throw new Error(`Waste property with id ${id} not found`);
       }
 
       // Soft delete
-      wasteProperty.deleted_at = new Date();
-      wasteProperty.deleted_by_uid = params.client_uid || wasteProperty.created_by_uid;
-      await wasteProperty.save();
+      const deletedWasteProperty = await WasteProperty.findByIdAndUpdate(
+        id,
+        {
+          deleted_at: new Date(),
+          updated_at: new Date()
+        },
+        { new: true }
+      );
 
       return {
         success: true,
-        data: { uid },
+        data: {
+          id: deletedWasteProperty!._id,
+          deleted_at: deletedWasteProperty!.deleted_at
+        },
         message: 'Waste property deleted successfully'
       };
     } catch (error) {

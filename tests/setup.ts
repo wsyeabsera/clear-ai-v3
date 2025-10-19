@@ -10,8 +10,13 @@ beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
   process.env.MONGODB_URI = 'mongodb://localhost:27017/waste-management-test';
-  process.env.OPENAI_API_KEY = 'test-openai-key';
-  process.env.GROQ_API_KEY = 'test-groq-key';
+  // Don't override API keys if they're already set (from .env file)
+  if (!process.env.OPENAI_API_KEY) {
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+  }
+  if (!process.env.GROQ_API_KEY) {
+    process.env.GROQ_API_KEY = 'test-groq-key';
+  }
   process.env.DEFAULT_LLM_PROVIDER = 'openai';
   process.env.ENABLE_LLM_FALLBACK = 'true';
   process.env.MAX_PLAN_REFINEMENTS = '3';

@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWasteGenerator extends Document {
-  uid: string;
-  client_uid: string;
   name: string;
   external_reference_id?: string;
   region?: string;
@@ -25,25 +23,12 @@ export interface IWasteGenerator extends Document {
   client: mongoose.Types.ObjectId;
   // Audit fields
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const WasteGeneratorSchema = new Schema<IWasteGenerator>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  client_uid: {
-    type: String,
-    required: true,
-    index: true
-  },
   name: {
     type: String,
     required: true
@@ -97,7 +82,8 @@ const WasteGeneratorSchema = new Schema<IWasteGenerator>({
   client: {
     type: Schema.Types.ObjectId,
     required: true,
-    ref: 'Client'
+    ref: 'Client',
+    index: true
   },
   // Audit fields
   created_at: {
@@ -105,20 +91,11 @@ const WasteGeneratorSchema = new Schema<IWasteGenerator>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

@@ -1,8 +1,8 @@
 // Test utilities for Planner Agent testing
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { connect, disconnect, mongoose } from 'mongoose';
-import { LangChainPlannerAgent } from '../../../src/agents/planner/langchain-planner';
+import { connect, disconnect, connection } from 'mongoose';
+import { PlannerAgent } from '../../../src/agents/planner/PlannerAgent';
 import { PlanRequestModel } from '../../../src/agents/planner/models/PlanRequest';
 import { Plan, PlanStatus } from '../../../src/agents/planner/types';
 
@@ -20,8 +20,8 @@ export class TestUtils {
     }
     
     // Close any existing connections first
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.connection.close();
+    if (connection.readyState !== 0) {
+      await connection.close();
     }
     
     // Connect to test database
@@ -138,7 +138,7 @@ export class TestUtils {
   /**
    * Create a mock planner agent for testing
    */
-  static createMockPlannerAgent(): Partial<LangChainPlannerAgent> {
+  static createMockPlannerAgent(): Partial<PlannerAgent> {
     return {
       plan: jest.fn().mockImplementation(async (query: string) => {
         const requestId = `test-${Date.now()}`;
@@ -225,9 +225,13 @@ export class TestUtils {
    * Create test environment variables
    */
   static getTestEnvVars(): Record<string, string> {
+    console.log('🔍 Debug: OPENAI_API_KEY from env:', process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'undefined');
+    console.log('🔍 Debug: OPENAI_API_KEY starts with sk-:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.startsWith('sk-') : false);
+    console.log('🔍 Debug: OPENAI_API_KEY length:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0);
+    
     return {
-      OPENAI_API_KEY: 'test-openai-key',
-      GROQ_API_KEY: 'test-groq-key',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'test-openai-key',
+      GROQ_API_KEY: process.env.GROQ_API_KEY || 'test-groq-key',
       MONGODB_URI: this.testDbUri || 'mongodb://localhost:27017/waste-management-test',
       DEFAULT_LLM_PROVIDER: 'openai',
       ENABLE_LLM_FALLBACK: 'true',
@@ -242,6 +246,16 @@ export class TestUtils {
   static setTestEnvVars(): void {
     const envVars = this.getTestEnvVars();
     Object.entries(envVars).forEach(([key, value]) => {
+      // Don't override API keys if they're already set in the environment
+      if (key === 'OPENAI_API_KEY' && process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('test-')) {
+        console.log('🔒 Keeping existing OPENAI_API_KEY:', process.env.OPENAI_API_KEY.substring(0, 15) + '...');
+        return; // Keep the existing API key
+      }
+      if (key === 'GROQ_API_KEY' && process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.startsWith('test-')) {
+        console.log('🔒 Keeping existing GROQ_API_KEY:', process.env.GROQ_API_KEY.substring(0, 15) + '...');
+        return; // Keep the existing API key
+      }
+      console.log(`🔧 Setting ${key} to:`, value);
       process.env[key] = value;
     });
   }

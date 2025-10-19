@@ -20,7 +20,7 @@ const contractTools: MCPTool[] = [
         tonnage_actual: { type: 'number', description: 'Actual tonnage' },
         source: { type: 'string', description: 'Data source' },
       },
-      required: ['id', 'facility_uid', 'client_uid'],
+      required: ['id', 'facility_id', 'client_id'],
     },
   },
   {
@@ -65,8 +65,8 @@ const contractTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        facility_uid: { type: 'string', description: 'Filter by facility ID' },
-        client_uid: { type: 'string', description: 'Filter by client ID' },
+        facility_id: { type: 'string', description: 'Filter by facility ID' },
+        client_id: { type: 'string', description: 'Filter by client ID' },
         title: { type: 'string', description: 'Filter by contract title' },
         date_from: { type: 'string', format: 'date-time', description: 'Filter from date' },
         date_to: { type: 'string', format: 'date-time', description: 'Filter to date' },

@@ -1,5 +1,6 @@
 import { ICommand, CommandResult } from '../ICommand';
 import { Shipment } from '../../models/Shipment';
+import { Client } from '../../models/Client';
 
 export class ListShipmentsCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
@@ -7,17 +8,12 @@ export class ListShipmentsCommand implements ICommand {
       // Build query filter
       const filter: any = {};
       
-      if (params.client_uid) {
-        filter.client_uid = params.client_uid;
+      if (params.client_id) {
+        filter.client = params.client_id;
       }
       
-      if (params.facility_uid) {
-        // Find facility and use its ObjectId
-        const { Facility } = await import('../../models/Facility');
-        const facility = await Facility.findOne({ uid: params.facility_uid });
-        if (facility) {
-          filter.facility = facility._id;
-        }
+      if (params.facility_id) {
+        filter.facility = params.facility_id;
       }
       
       if (params.license_plate) {

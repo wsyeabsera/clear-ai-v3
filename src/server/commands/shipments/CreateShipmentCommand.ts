@@ -6,29 +6,28 @@ export class CreateShipmentCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
     try {
       // Validate required fields
-      if (!params.uid || !params.client_uid || !params.license_plate) {
+      if (!params.client_id || !params.license_plate) {
         return {
           success: false,
-          error: 'Missing required fields: uid, client_uid, license_plate',
+          error: 'Missing required fields: client_id, license_plate',
         };
       }
 
-      // Find facility if facility_uid is provided
+      // Find facility if facility_id is provided
       let facility = null;
-      if (params.facility_uid) {
-        facility = await Facility.findOne({ uid: params.facility_uid });
+      if (params.facility_id) {
+        facility = await Facility.findById(params.facility_id);
         if (!facility) {
           return {
             success: false,
-            error: `Facility with uid '${params.facility_uid}' not found`,
+            error: `Facility with id '${params.facility_id}' not found`,
           };
         }
       }
 
       // Create shipment data
       const shipmentData = {
-        uid: params.uid,
-        client_uid: params.client_uid,
+        client: params.client_id,
         license_plate: params.license_plate,
         entry_timestamp: params.entry_timestamp ? new Date(params.entry_timestamp) : undefined,
         entry_weight: params.entry_weight,

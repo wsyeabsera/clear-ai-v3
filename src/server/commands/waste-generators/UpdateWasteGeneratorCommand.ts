@@ -4,21 +4,20 @@ import { WasteGenerator } from '../../models/WasteGenerator';
 export class UpdateWasteGeneratorCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid, ...updateData } = params;
+      const { id, ...updateData } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const wasteGenerator = await WasteGenerator.findOne({ uid });
+      const wasteGenerator = await WasteGenerator.findById(id);
       if (!wasteGenerator) {
-        throw new Error(`Waste generator with UID ${uid} not found`);
+        throw new Error(`Waste generator with id ${id} not found`);
       }
 
       // Prepare update data
       const updateFields: any = {
-        updated_at: new Date(),
-        updated_by_uid: updateData.client_uid || wasteGenerator.created_by_uid
+        updated_at: new Date()
       };
 
       // Add fields that are provided
@@ -41,8 +40,8 @@ export class UpdateWasteGeneratorCommand implements ICommand {
       if (updateData.source !== undefined) updateFields.source = updateData.source;
       if (updateData.notes !== undefined) updateFields.notes = updateData.notes;
 
-      const updatedWasteGenerator = await WasteGenerator.findOneAndUpdate(
-        { uid },
+      const updatedWasteGenerator = await WasteGenerator.findByIdAndUpdate(
+        id,
         updateFields,
         { new: true, runValidators: true }
       );

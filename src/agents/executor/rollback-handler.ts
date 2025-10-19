@@ -154,13 +154,13 @@ export class RollbackHandler {
    */
   private generateDeleteParams(tool: string, result: any, originalParams: any): any {
     // Extract the ID from the result or original params
-    const id = result.data?.uid || result.data?.id || originalParams.uid || originalParams.id;
+    const id = result.data?.id || result.data?._id || originalParams.id || originalParams._id;
     
     if (!id) {
       return null;
     }
     
-    return { uid: id };
+    return { id: id };
   }
   
   /**

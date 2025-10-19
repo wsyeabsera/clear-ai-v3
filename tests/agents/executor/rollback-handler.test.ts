@@ -23,18 +23,18 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 0,
           tool: 'mcp_waste-management_shipments_create',
-          params: { uid: 'ship-123', client_uid: 'client-123' },
+          params: { id: 'ship-123', client_id: 'client-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'ship-123' } },
+          result: { success: true, data: { id: 'ship-123' } },
           retryCount: 0,
           dependencies: []
         },
         {
           stepIndex: 1,
           tool: 'mcp_waste-management_facilities_create',
-          params: { uid: 'facility-123', name: 'Test Facility' },
+          params: { id: 'facility-123', name: 'Test Facility' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'facility-123' } },
+          result: { success: true, data: { id: 'facility-123' } },
           retryCount: 0,
           dependencies: []
         }
@@ -44,9 +44,9 @@ describe('RollbackHandler', () => {
       
       expect(rollbackPlan.steps).toHaveLength(2);
       expect(rollbackPlan.steps[0].tool).toBe('mcp_waste-management_facilities_delete');
-      expect(rollbackPlan.steps[0].params).toEqual({ uid: 'facility-123' });
+      expect(rollbackPlan.steps[0].params).toEqual({ id: 'facility-123' });
       expect(rollbackPlan.steps[1].tool).toBe('mcp_waste-management_shipments_delete');
-      expect(rollbackPlan.steps[1].params).toEqual({ uid: 'ship-123' });
+      expect(rollbackPlan.steps[1].params).toEqual({ id: 'ship-123' });
       expect(rollbackPlan.reason).toContain('2 completed steps');
     });
     
@@ -55,16 +55,16 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 0,
           tool: 'mcp_waste-management_shipments_create',
-          params: { uid: 'ship-123' },
+          params: { id: 'ship-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'ship-123' } },
+          result: { success: true, data: { id: 'ship-123' } },
           retryCount: 0,
           dependencies: []
         },
         {
           stepIndex: 1,
           tool: 'mcp_waste-management_facilities_create',
-          params: { uid: 'facility-123' },
+          params: { id: 'facility-123' },
           status: StepStatus.FAILED,
           result: null,
           retryCount: 0,
@@ -73,7 +73,7 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 2,
           tool: 'mcp_waste-management_contaminants_create',
-          params: { uid: 'contaminant-123' },
+          params: { id: 'contaminant-123' },
           status: StepStatus.PENDING,
           result: null,
           retryCount: 0,
@@ -92,18 +92,18 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 0,
           tool: 'mcp_waste-management_shipments_create',
-          params: { uid: 'ship-123' },
+          params: { id: 'ship-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'ship-123' } },
+          result: { success: true, data: { id: 'ship-123' } },
           retryCount: 0,
           dependencies: []
         },
         {
           stepIndex: 2,
           tool: 'mcp_waste-management_contaminants_create',
-          params: { uid: 'contaminant-123' },
+          params: { id: 'contaminant-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'contaminant-123' } },
+          result: { success: true, data: { id: 'contaminant-123' } },
           retryCount: 0,
           dependencies: []
         }
@@ -121,9 +121,9 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 0,
           tool: 'unknown_tool',
-          params: { uid: 'test-123' },
+          params: { id: 'test-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'test-123' } },
+          result: { success: true, data: { id: 'test-123' } },
           retryCount: 0,
           dependencies: []
         }
@@ -176,7 +176,7 @@ describe('RollbackHandler', () => {
         steps: [
           {
             tool: 'mcp_waste-management_shipments_delete',
-            params: { uid: 'ship-123' },
+            params: { id: 'ship-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 0'
@@ -199,7 +199,7 @@ describe('RollbackHandler', () => {
       expect(result.errors).toHaveLength(0);
       expect(MockedToolAdapter.executeTool).toHaveBeenCalledWith(
         'mcp_waste-management_shipments_delete',
-        { uid: 'ship-123' }
+        { id: 'ship-123' }
       );
     });
     
@@ -208,14 +208,14 @@ describe('RollbackHandler', () => {
         steps: [
           {
             tool: 'mcp_waste-management_shipments_delete',
-            params: { uid: 'ship-123' },
+            params: { id: 'ship-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 0'
           },
           {
             tool: 'mcp_waste-management_facilities_delete',
-            params: { uid: 'facility-123' },
+            params: { id: 'facility-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 1'
@@ -263,14 +263,14 @@ describe('RollbackHandler', () => {
         steps: [
           {
             tool: 'mcp_waste-management_shipments_delete',
-            params: { uid: 'ship-123' },
+            params: { id: 'ship-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 0'
           },
           {
             tool: 'unknown_tool',
-            params: { uid: 'test-123' },
+            params: { id: 'test-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 1'
@@ -310,7 +310,7 @@ describe('RollbackHandler', () => {
         steps: [
           {
             tool: 'mcp_waste-management_shipments_delete',
-            params: { uid: 'ship-123' },
+            params: { id: 'ship-123' },
             dependsOn: [],
             parallel: false,
             description: 'Rollback step 0'
@@ -337,7 +337,7 @@ describe('RollbackHandler', () => {
           },
           {
             tool: 'unknown_tool',
-            params: { uid: 'test-123' },
+            params: { id: 'test-123' },
             dependsOn: [],
             parallel: false,
             description: 'Unsupported step'
@@ -373,9 +373,9 @@ describe('RollbackHandler', () => {
         {
           stepIndex: 0,
           tool: 'mcp_waste-management_shipments_create',
-          params: { uid: 'ship-123' },
+          params: { id: 'ship-123' },
           status: StepStatus.COMPLETED,
-          result: { success: true, data: { uid: 'ship-123' } },
+          result: { success: true, data: { id: 'ship-123' } },
           retryCount: 0,
           dependencies: []
         },
@@ -402,9 +402,9 @@ describe('RollbackHandler', () => {
       const step: ExecutionStepResult = {
         stepIndex: 0,
         tool: 'mcp_waste-management_shipments_create',
-        params: { uid: 'ship-123', client_uid: 'client-123' },
+        params: { id: 'ship-123', client_id: 'client-123' },
         status: StepStatus.COMPLETED,
-        result: { success: true, data: { uid: 'ship-123' } },
+        result: { success: true, data: { id: 'ship-123' } },
         retryCount: 0,
         dependencies: []
       };
@@ -412,14 +412,14 @@ describe('RollbackHandler', () => {
       // Access private method through any cast
       const params = (rollbackHandler as any).generateRollbackParams(step);
       
-      expect(params).toEqual({ uid: 'ship-123' });
+      expect(params).toEqual({ id: 'ship-123' });
     });
     
     it('should return null for failed operations', () => {
       const step: ExecutionStepResult = {
         stepIndex: 0,
         tool: 'mcp_waste-management_shipments_create',
-        params: { uid: 'ship-123' },
+        params: { id: 'ship-123' },
         status: StepStatus.FAILED,
         result: { success: false, error: 'Creation failed' },
         retryCount: 0,

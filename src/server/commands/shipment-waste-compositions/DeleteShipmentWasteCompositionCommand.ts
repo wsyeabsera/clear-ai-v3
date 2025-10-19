@@ -4,32 +4,32 @@ import { ShipmentWasteComposition } from '../../models/ShipmentWasteComposition'
 export class DeleteShipmentWasteCompositionCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid } = params;
+      const { id } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const composition = await ShipmentWasteComposition.findOne({ uid });
+      const composition = await ShipmentWasteComposition.findById(id);
       if (!composition) {
-        throw new Error(`Shipment waste composition with UID ${uid} not found`);
+        throw new Error(`Shipment waste composition with id ${id} not found`);
       }
 
       // Soft delete by setting deleted_at timestamp
-      await ShipmentWasteComposition.findOneAndUpdate(
-        { uid },
+      const deletedComposition = await ShipmentWasteComposition.findByIdAndUpdate(
+        id,
         {
           deleted_at: new Date(),
-          deleted_by_uid: params.client_uid || composition.created_by_uid,
           updated_at: new Date()
-        }
+        },
+        { new: true }
       );
 
       return {
         success: true,
         data: {
-          uid: composition.uid,
-          deleted_at: new Date()
+          id: deletedComposition!._id,
+          deleted_at: deletedComposition!.deleted_at
         },
         message: 'Shipment waste composition deleted successfully'
       };

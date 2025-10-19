@@ -6,16 +6,15 @@ export class CreateFacilityCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
     try {
       // Validate required fields
-      if (!params.uid || !params.name || !params.client_uid) {
+      if (!params.name || !params.client_id) {
         return {
           success: false,
-          error: 'Missing required fields: uid, name, client_uid',
+          error: 'Missing required fields: name, client_id',
         };
       }
 
       // Create facility data
       const facilityData = {
-        uid: params.uid,
         name: params.name,
         address: params.address,
         city: params.city,
@@ -45,7 +44,7 @@ export class CreateFacilityCommand implements ICommand {
         rules_singular_delivery_check: params.rules_singular_delivery_check,
         rules_waste_item_rule_check: params.rules_waste_item_rule_check,
         rules_waste_item_size_check: params.rules_waste_item_size_check,
-        client: new mongoose.Types.ObjectId(params.client_uid),
+        client: new mongoose.Types.ObjectId(params.client_id),
       };
 
       const facility = new Facility(facilityData);

@@ -5,8 +5,8 @@ export class ListContractsCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
       const {
-        facility_uid,
-        client_uid,
+        facility_id,
+        client_id,
         title,
         date_from,
         date_to,
@@ -19,12 +19,12 @@ export class ListContractsCommand implements ICommand {
         deleted_at: { $exists: false } // Only non-deleted contracts
       };
 
-      if (facility_uid) {
-        filter.facility_uid = facility_uid;
+      if (facility_id) {
+        filter.facility = facility_id;
       }
 
-      if (client_uid) {
-        filter.client_uid = client_uid;
+      if (client_id) {
+        filter.client = client_id;
       }
 
       if (title) {
@@ -47,8 +47,8 @@ export class ListContractsCommand implements ICommand {
       // Execute query with pagination
       const [contracts, totalCount] = await Promise.all([
         Contract.find(filter)
-          .populate('facility', 'uid name address city country')
-          .populate('client', 'uid name')
+          .populate('facility', 'name address city country')
+          .populate('client', 'name')
           .sort({ created_at: -1 })
           .skip(skip)
           .limit(limit)
@@ -64,26 +64,7 @@ export class ListContractsCommand implements ICommand {
       return {
         success: true,
         data: {
-          contracts: contracts.map(contract => ({
-            uid: contract.uid,
-            facility_uid: contract.facility_uid,
-            client_uid: contract.client_uid,
-            title: contract.title,
-            external_reference_id: contract.external_reference_id,
-            external_waste_code_id: contract.external_waste_code_id,
-            start_date: contract.start_date,
-            end_date: contract.end_date,
-            tonnage_min: contract.tonnage_min,
-            tonnage_max: contract.tonnage_max,
-            tonnage_actual: contract.tonnage_actual,
-            source: contract.source,
-            facility: contract.facility,
-            client: contract.client,
-            created_at: contract.created_at,
-            created_by_uid: contract.created_by_uid,
-            updated_at: contract.updated_at,
-            updated_by_uid: contract.updated_by_uid
-          })),
+          contracts: contracts.map(contract => contract),
           pagination: {
             currentPage: page,
             totalPages,

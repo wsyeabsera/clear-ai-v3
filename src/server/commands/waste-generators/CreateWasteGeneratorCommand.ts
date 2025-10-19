@@ -5,8 +5,7 @@ export class CreateWasteGeneratorCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
       const {
-        uid,
-        client_uid,
+        client_id,
         name,
         external_reference_id,
         region,
@@ -28,24 +27,15 @@ export class CreateWasteGeneratorCommand implements ICommand {
       } = params;
 
       // Validate required fields
-      if (!uid || !name || !client_uid) {
-        throw new Error('Missing required fields: uid, name, client_uid');
-      }
-
-      // Check if waste generator already exists
-      const existingWasteGenerator = await WasteGenerator.findOne({ uid });
-      if (existingWasteGenerator) {
-        throw new Error(`Waste generator with UID ${uid} already exists`);
+      if (!name || !client_id) {
+        throw new Error('Missing required fields: name, client_id');
       }
 
       // Create new waste generator
       const wasteGeneratorData: any = {
-        uid,
-        client_uid,
         name,
-        client: client_uid, // This should be an ObjectId, but for now we'll use the string
-        created_at: new Date(),
-        created_by_uid: client_uid
+        client: client_id,
+        created_at: new Date()
       };
 
       // Add optional fields if provided

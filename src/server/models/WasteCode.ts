@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWasteCode extends Document {
-  uid: string;
   code: string;
   name: string;
   description?: string;
@@ -12,20 +11,12 @@ export interface IWasteCode extends Document {
   calorific_value_comment?: string;
   source?: string;
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const WasteCodeSchema = new Schema<IWasteCode>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
   code: {
     type: String,
     required: true,
@@ -62,20 +53,11 @@ const WasteCodeSchema = new Schema<IWasteCode>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

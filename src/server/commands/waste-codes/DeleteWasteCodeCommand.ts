@@ -4,32 +4,32 @@ import { WasteCode } from '../../models/WasteCode';
 export class DeleteWasteCodeCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid } = params;
+      const { id } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const wasteCode = await WasteCode.findOne({ uid });
+      const wasteCode = await WasteCode.findById(id);
       if (!wasteCode) {
-        throw new Error(`Waste code with UID ${uid} not found`);
+        throw new Error(`Waste code with id ${id} not found`);
       }
 
       // Soft delete by setting deleted_at timestamp
-      await WasteCode.findOneAndUpdate(
-        { uid },
+      const deletedWasteCode = await WasteCode.findByIdAndUpdate(
+        id,
         {
           deleted_at: new Date(),
-          deleted_by_uid: params.client_uid || 'system',
           updated_at: new Date()
-        }
+        },
+        { new: true }
       );
 
       return {
         success: true,
         data: {
-          uid: wasteCode.uid,
-          deleted_at: new Date()
+          id: deletedWasteCode!._id,
+          deleted_at: deletedWasteCode!.deleted_at
         },
         message: 'Waste code deleted successfully'
       };

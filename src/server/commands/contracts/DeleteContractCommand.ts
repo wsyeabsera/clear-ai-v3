@@ -4,32 +4,32 @@ import { Contract } from '../../models/Contract';
 export class DeleteContractCommand implements ICommand {
   async execute(params: any): Promise<any> {
     try {
-      const { uid } = params;
+      const { id } = params;
 
-      if (!uid) {
-        throw new Error('Missing required field: uid');
+      if (!id) {
+        throw new Error('Missing required field: id');
       }
 
-      const contract = await Contract.findOne({ uid });
+      const contract = await Contract.findById(id);
       if (!contract) {
-        throw new Error(`Contract with UID ${uid} not found`);
+        throw new Error(`Contract with id ${id} not found`);
       }
 
       // Soft delete by setting deleted_at timestamp
-      await Contract.findOneAndUpdate(
-        { uid },
+      const deletedContract = await Contract.findByIdAndUpdate(
+        id,
         {
           deleted_at: new Date(),
-          deleted_by_uid: params.client_uid || contract.client_uid,
           updated_at: new Date()
-        }
+        },
+        { new: true }
       );
 
       return {
         success: true,
         data: {
-          uid: contract.uid,
-          deleted_at: new Date()
+          id: deletedContract!._id,
+          deleted_at: deletedContract!.deleted_at
         },
         message: 'Contract deleted successfully'
       };

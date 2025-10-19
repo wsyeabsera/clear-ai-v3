@@ -4,7 +4,6 @@ import { Facility, IFacility } from '../../../src/server/models/Facility';
 describe('Facility Model', () => {
   it('should create a facility with valid data', async () => {
     const facilityData: Partial<IFacility> = {
-      uid: 'facility-001',
       name: 'Test Waste Facility',
       address: '123 Industrial St',
       city: 'Test City',
@@ -21,31 +20,21 @@ describe('Facility Model', () => {
       rules_explosive_risk_check: true,
       rules_item_size_limit: true,
       client: new mongoose.Types.ObjectId(),
+      created_at: new Date()
     };
 
     const facility = new Facility(facilityData);
     const savedFacility = await facility.save();
 
-    expect(savedFacility.uid).toBe('facility-001');
     expect(savedFacility.name).toBe('Test Waste Facility');
     expect(savedFacility.city).toBe('Test City');
     expect(savedFacility.door_count).toBe(5);
     expect(savedFacility.rules_explosive_risk_check).toBe(true);
   });
 
-  it('should require uid field', async () => {
-    const facilityData = {
-      name: 'Test Facility',
-    };
-
-    const facility = new Facility(facilityData);
-    
-    await expect(facility.save()).rejects.toThrow();
-  });
-
   it('should require name field', async () => {
     const facilityData = {
-      uid: 'facility-001',
+      client: new mongoose.Types.ObjectId(),
     };
 
     const facility = new Facility(facilityData);
@@ -55,7 +44,6 @@ describe('Facility Model', () => {
 
   it('should require client field', async () => {
     const facilityData = {
-      uid: 'facility-001',
       name: 'Test Facility',
     };
 
@@ -66,9 +54,9 @@ describe('Facility Model', () => {
 
   it('should set default values for rules', async () => {
     const facilityData: Partial<IFacility> = {
-      uid: 'facility-001',
       name: 'Test Facility',
       client: new mongoose.Types.ObjectId(),
+      created_at: new Date()
     };
 
     const facility = new Facility(facilityData);

@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IBunker extends Document {
-  uid: string;
   name: string;
   facility: mongoose.Types.ObjectId;
   capacity?: number;
@@ -24,28 +23,19 @@ export interface IBunker extends Document {
   is_retention_applied?: boolean;
   // Merge tracking fields
   merged_at?: Date;
-  merged_by_uid?: string;
-  merged_from_shipment_uid?: string;
+  merged_from_shipment?: mongoose.Types.ObjectId;
   // Relationship fields
   client?: mongoose.Types.ObjectId;
   shipment?: mongoose.Types.ObjectId;
   has_child?: boolean;
   // Audit fields
   created_at: Date;
-  created_by_uid?: string;
   updated_at?: Date;
-  updated_by_uid?: string;
   deleted_at?: Date;
-  deleted_by_uid?: string;
   migration_id?: number;
 }
 
 const BunkerSchema = new Schema<IBunker>({
-  uid: {
-    type: String,
-    required: true,
-    unique: true
-  },
   name: {
     type: String,
     required: true
@@ -115,11 +105,9 @@ const BunkerSchema = new Schema<IBunker>({
   merged_at: {
     type: Date
   },
-  merged_by_uid: {
-    type: String
-  },
-  merged_from_shipment_uid: {
-    type: String
+  merged_from_shipment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Shipment'
   },
   // Relationship fields
   client: {
@@ -140,20 +128,11 @@ const BunkerSchema = new Schema<IBunker>({
     default: Date.now,
     required: true
   },
-  created_by_uid: {
-    type: String
-  },
   updated_at: {
     type: Date
   },
-  updated_by_uid: {
-    type: String
-  },
   deleted_at: {
     type: Date
-  },
-  deleted_by_uid: {
-    type: String
   },
   migration_id: {
     type: Number

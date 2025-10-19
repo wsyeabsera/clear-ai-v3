@@ -10,26 +10,25 @@ describe('Inspection Model', () => {
   beforeEach(async () => {
     // Create test facility
     facility = new Facility({
-      uid: 'facility-001',
       name: 'Test Facility',
       client: new mongoose.Types.ObjectId(),
+      created_at: new Date()
     });
     await facility.save();
 
     // Create test shipment
     shipment = new Shipment({
-      uid: 'shipment-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       license_plate: 'ABC-123',
       facility: facility._id,
+      created_at: new Date()
     });
     await shipment.save();
   });
 
   it('should create an inspection with valid data', async () => {
     const inspectionData: Partial<IInspection> = {
-      uid: 'inspection-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       calorific_value: 18.5,
       comments: 'Inspection completed successfully',
       consistency: 'Mixed waste',
@@ -50,13 +49,12 @@ describe('Inspection Model', () => {
       solvent_like_smell: false,
       facility: facility._id,
       shipment: shipment._id,
+      created_at: new Date()
     };
 
     const inspection = new Inspection(inspectionData);
     const savedInspection = await inspection.save();
 
-    expect(savedInspection.uid).toBe('inspection-001');
-    expect(savedInspection.client_uid).toBe('client-001');
     expect(savedInspection.calorific_value).toBe(18.5);
     expect(savedInspection.delivery_accepted).toBe(true);
     expect(savedInspection.moisture).toBe(25.5);
@@ -64,21 +62,8 @@ describe('Inspection Model', () => {
     expect(savedInspection.shipment.toString()).toBe(shipment._id.toString());
   });
 
-  it('should require uid field', async () => {
+  it('should require client field', async () => {
     const inspectionData = {
-      client_uid: 'client-001',
-      facility: facility._id,
-      shipment: shipment._id,
-    };
-
-    const inspection = new Inspection(inspectionData);
-    
-    await expect(inspection.save()).rejects.toThrow();
-  });
-
-  it('should require client_uid field', async () => {
-    const inspectionData = {
-      uid: 'inspection-001',
       facility: facility._id,
       shipment: shipment._id,
     };
@@ -90,8 +75,7 @@ describe('Inspection Model', () => {
 
   it('should require facility field', async () => {
     const inspectionData = {
-      uid: 'inspection-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       shipment: shipment._id,
     };
 
@@ -102,8 +86,7 @@ describe('Inspection Model', () => {
 
   it('should require shipment field', async () => {
     const inspectionData = {
-      uid: 'inspection-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       facility: facility._id,
     };
 
@@ -114,10 +97,10 @@ describe('Inspection Model', () => {
 
   it('should set default values for boolean fields', async () => {
     const inspectionData: Partial<IInspection> = {
-      uid: 'inspection-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       facility: facility._id,
       shipment: shipment._id,
+      created_at: new Date()
     };
 
     const inspection = new Inspection(inspectionData);
@@ -133,10 +116,10 @@ describe('Inspection Model', () => {
 
   it('should populate facility and shipment references', async () => {
     const inspectionData: Partial<IInspection> = {
-      uid: 'inspection-001',
-      client_uid: 'client-001',
+      client: new mongoose.Types.ObjectId(),
       facility: facility._id,
       shipment: shipment._id,
+      created_at: new Date()
     };
 
     const inspection = new Inspection(inspectionData);
@@ -149,6 +132,6 @@ describe('Inspection Model', () => {
     expect(populatedInspection?.facility).toBeDefined();
     expect((populatedInspection?.facility as any).name).toBe('Test Facility');
     expect(populatedInspection?.shipment).toBeDefined();
-    expect((populatedInspection?.shipment as any).uid).toBe('shipment-001');
+    expect((populatedInspection?.shipment as any).license_plate).toBe('ABC-123');
   });
 });

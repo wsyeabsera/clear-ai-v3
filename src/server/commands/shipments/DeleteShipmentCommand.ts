@@ -4,27 +4,25 @@ import { Shipment } from '../../models/Shipment';
 export class DeleteShipmentCommand implements ICommand {
   async execute(params: any): Promise<CommandResult> {
     try {
-      if (!params.uid) {
+      if (!params.id) {
         return {
           success: false,
-          error: 'Missing required field: uid',
+          error: 'Missing required field: id',
         };
       }
 
-      const shipment = await Shipment.findOne({ uid: params.uid });
+      const deletedShipment = await Shipment.findByIdAndDelete(params.id);
       
-      if (!shipment) {
+      if (!deletedShipment) {
         return {
           success: false,
-          error: `Shipment with uid '${params.uid}' not found`,
+          error: `Shipment with id '${params.id}' not found`,
         };
       }
-
-      await Shipment.deleteOne({ uid: params.uid });
 
       return {
         success: true,
-        message: `Shipment '${params.uid}' deleted successfully`,
+        message: `Shipment '${params.id}' deleted successfully`,
       };
     } catch (error: any) {
       return {
