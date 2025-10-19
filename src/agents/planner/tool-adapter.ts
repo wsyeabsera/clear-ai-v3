@@ -272,4 +272,104 @@ ${formattedTools}
     
     return examples;
   }
+
+  /**
+   * Get lightweight category metadata with dependencies for Stage 1
+   */
+  static getCategoryMetadata(): string {
+    const categories = [
+      { name: 'clients', desc: 'Client management - stores customer information and relationships', deps: [] },
+      { name: 'facilities', desc: 'Facility management - physical locations for waste processing', deps: [] },
+      { name: 'shipments', desc: 'Shipment tracking - waste transport and delivery records', deps: ['facilities', 'clients'] },
+      { name: 'contaminants', desc: 'Contaminant tracking - harmful substances found in waste', deps: ['shipments'] },
+      { name: 'inspections', desc: 'Inspection records - quality control and compliance checks', deps: ['facilities', 'shipments'] },
+      { name: 'contracts', desc: 'Contract management - agreements and service contracts', deps: ['clients'] },
+      { name: 'waste_codes', desc: 'Waste code classifications - standardized waste categorization', deps: [] },
+      { name: 'waste_generators', desc: 'Waste generator records - entities producing waste', deps: ['clients'] },
+      { name: 'shipment_waste_compositions', desc: 'Waste composition data for shipments', deps: ['shipments', 'waste_codes'] },
+      { name: 'waste_properties', desc: 'Waste property details - physical and chemical properties', deps: ['waste_codes'] },
+      { name: 'bunkers', desc: 'Bunker management - storage containers for waste', deps: ['facilities'] }
+    ];
+
+    let result = 'Available Categories:\n';
+    categories.forEach(cat => {
+      result += `- ${cat.name}: ${cat.desc}`;
+      if (cat.deps.length > 0) {
+        result += ` (depends on: ${cat.deps.join(', ')})`;
+      }
+      result += '\n';
+    });
+
+    return result;
+  }
+
+  /**
+   * Get tools filtered by specific categories
+   */
+  static getToolsByCategories(tools: MCPTool[], categories: string[]): MCPTool[] {
+    return tools.filter(tool => {
+      const toolCategory = tool.name.split('_')[0];
+      return categories.includes(toolCategory);
+    });
+  }
+
+  /**
+   * Expand categories with their dependencies recursively
+   */
+  static expandCategoriesWithDependencies(selectedCategories: string[]): string[] {
+    const categoryDeps: Record<string, string[]> = {
+      'clients': [],
+      'facilities': [],
+      'shipments': ['facilities', 'clients'],
+      'contaminants': ['shipments'],
+      'inspections': ['facilities', 'shipments'],
+      'contracts': ['clients'],
+      'waste_codes': [],
+      'waste_generators': ['clients'],
+      'shipment_waste_compositions': ['shipments', 'waste_codes'],
+      'waste_properties': ['waste_codes'],
+      'bunkers': ['facilities']
+    };
+
+    const expanded = new Set<string>();
+    const toProcess = [...selectedCategories];
+
+    while (toProcess.length > 0) {
+      const category = toProcess.pop()!;
+      if (expanded.has(category)) continue;
+
+      expanded.add(category);
+      const deps = categoryDeps[category] || [];
+      deps.forEach(dep => {
+        if (!expanded.has(dep)) {
+          toProcess.push(dep);
+        }
+      });
+    }
+
+    return Array.from(expanded);
+  }
+
+  /**
+   * Format tools in compact JSON format for Groq (Stage 2)
+   */
+  static formatToolsCompact(tools: MCPTool[]): string {
+    const relationships = this.getDataFlowRelationships(tools);
+    const compactTools: Record<string, any> = {};
+
+    tools.forEach(tool => {
+      const required = tool.inputSchema.required || [];
+      const optional = Object.keys(tool.inputSchema.properties).filter(p => !required.includes(p));
+      const deps = relationships[tool.name] || [];
+
+      compactTools[tool.name] = {
+        desc: tool.description,
+        req: required,
+        opt: optional,
+        deps: deps
+      };
+    });
+
+    return JSON.stringify(compactTools, null, 0);
+  }
 }

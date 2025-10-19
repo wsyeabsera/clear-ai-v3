@@ -1,7 +1,7 @@
 // Analyzer Agent for evaluating execution results and providing feedback
 
 import { randomUUID } from 'crypto';
-import { AnalysisResult, AnalysisContext, EvaluationMetrics } from './types';
+import { AnalysisResult, AnalysisContext, EvaluationMetrics, AnalysisStorage } from './types';
 import { ExecutionStorage } from '../executor/storage';
 import { PlanStorage } from '../planner/storage';
 import { AnalyzerStorage } from './storage';
@@ -87,8 +87,16 @@ export class AnalyzerAgent {
         recommendations: llmFeedback.recommendations
       };
 
+      // Create storage object with user_query
+      const analysisStorage: AnalysisStorage = {
+        ...analysisResult,
+        user_query: context.user_query,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
       // Store analysis in MongoDB
-      await AnalyzerStorage.saveAnalysis(analysisResult);
+      await AnalyzerStorage.saveAnalysis(analysisStorage);
 
       // Store in vector memory for future learning
       await this.storeInVectorMemory(analysisResult, context);
@@ -190,7 +198,15 @@ export class AnalyzerAgent {
         throw new Error('No response from LLM');
       }
 
-      return JSON.parse(content);
+      // Clean the content to extract JSON from markdown if present
+      let jsonContent = content.trim();
+      if (jsonContent.startsWith('```json')) {
+        jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      return JSON.parse(jsonContent);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`LLM feedback generation failed: ${error.message}`);

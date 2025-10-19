@@ -56,9 +56,7 @@ export class PineconeVectorStore implements VectorStore {
     try {
       const queryRequest: any = {
         vector,
-        topK,
-        includeValues: true,
-        includeMetadata: true
+        topK
       };
 
       if (namespace) {
@@ -69,7 +67,8 @@ export class PineconeVectorStore implements VectorStore {
         queryRequest.filter = filter;
       }
 
-      const response = await this.index.query(queryRequest);
+      // Use the correct Pinecone v2 API format
+      const response = await this.index.query({ queryRequest });
 
       return response.matches.map((match: any) => ({
         id: match.id,

@@ -180,7 +180,7 @@ export class PlanValidator {
       recursionStack.add(stepIndex);
       
       const step = steps[stepIndex];
-      if (step.dependsOn) {
+      if (step && step.dependsOn && Array.isArray(step.dependsOn)) {
         for (const depIndex of step.dependsOn) {
           if (hasCycle(depIndex)) {
             return true;

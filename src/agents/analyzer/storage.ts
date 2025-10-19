@@ -75,24 +75,12 @@ export class AnalyzerStorage {
   /**
    * Save analysis result to MongoDB
    */
-  static async saveAnalysis(analysis: AnalysisResult): Promise<AnalysisStorage> {
+  static async saveAnalysis(analysis: AnalysisStorage): Promise<AnalysisStorage> {
     if (!this.isConnected()) {
       throw new Error('MongoDB not connected');
     }
 
-    const analysisDoc = new AnalysisModel({
-      analysis_id: analysis.analysis_id,
-      execution_id: analysis.execution_id,
-      plan_request_id: analysis.plan_request_id,
-      user_query: '', // Will be filled from context
-      feedback: analysis.feedback,
-      evaluation_metrics: analysis.evaluation_metrics,
-      improvement_notes: analysis.improvement_notes,
-      success_indicators: analysis.success_indicators,
-      failure_patterns: analysis.failure_patterns,
-      recommendations: analysis.recommendations
-    });
-
+    const analysisDoc = new AnalysisModel(analysis);
     return await analysisDoc.save();
   }
 

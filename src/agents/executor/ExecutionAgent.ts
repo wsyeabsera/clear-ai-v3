@@ -240,16 +240,26 @@ export class ExecutionAgent {
     await ExecutionStorage.updateStepResult(context.executionId, stepIndex, stepResult);
     
     try {
-      // Execute with retry
+      // Resolve parameters with step references
+      const resolvedParams = this.resolveStepReferences(step.params, stepResults);
+      
+      // Validate parameters
+      const validation = this.validateParameters(step.tool, resolvedParams);
+      if (!validation.valid) {
+        throw new Error(`Invalid parameters: ${validation.errors.join(', ')}`);
+      }
+      
+      // Execute with resolved and validated parameters
       const result = await this.retryHandler.retryWithBackoff(
-        () => ToolAdapter.executeTool(step.tool, step.params),
+        () => ToolAdapter.executeTool(step.tool, resolvedParams),
         context.config.maxRetries,
         context.config.retryDelayMs
       );
       
       // Mark as completed
       stepResult.status = StepStatus.COMPLETED;
-      stepResult.result = result;
+      // Unwrap CommandResult - store only the data field
+      stepResult.result = result?.data !== undefined ? result.data : result;
       stepResult.completedAt = new Date();
       
       console.log(`Step ${stepIndex} (${step.tool}) completed successfully`);
@@ -427,5 +437,108 @@ export class ExecutionAgent {
       failedSteps: execution.failedSteps,
       error: execution.error
     };
+  }
+
+  /**
+   * Resolve step references in parameters
+   */
+  private resolveStepReferences(params: any, stepResults: ExecutionStepResult[]): any {
+    if (typeof params !== 'object' || params === null) {
+      return params;
+    }
+    
+    const resolved: any = Array.isArray(params) ? [] : {};
+    
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value === 'string' && value.includes('${step_')) {
+        // Resolve step reference
+        resolved[key] = this.resolveExpression(value, stepResults);
+      } else if (typeof value === 'object') {
+        // Recursively resolve nested objects
+        resolved[key] = this.resolveStepReferences(value, stepResults);
+      } else {
+        resolved[key] = value;
+      }
+    }
+    
+    return resolved;
+  }
+
+  /**
+   * Resolve a single step reference expression
+   */
+  private resolveExpression(expression: string, stepResults: ExecutionStepResult[]): any {
+    // Match patterns like ${step_0.result[0].uid} or ${step_1.result.id}
+    const match = expression.match(/\$\{step_(\d+)\.result(.*?)\}/);
+    if (!match) return expression;
+    
+    const stepIndex = parseInt(match[1]);
+    const path = match[2];
+    
+    const stepResult = stepResults[stepIndex];
+    if (!stepResult || !stepResult.result) {
+      return null;
+    }
+    
+    // Navigate the path (e.g., "[0].uid" or ".id")
+    return this.getValueByPath(stepResult.result, path);
+  }
+
+  /**
+   * Get value by path from an object
+   */
+  private getValueByPath(obj: any, path: string): any {
+    if (!path) return obj;
+    
+    // Handle array access like [0] and property access like .uid
+    const parts = path.match(/\[(\d+)\]|\.(\w+)/g);
+    if (!parts) return obj;
+    
+    let current = obj;
+    for (const part of parts) {
+      if (part.startsWith('[')) {
+        const index = parseInt(part.slice(1, -1));
+        current = current[index];
+      } else {
+        const prop = part.slice(1);
+        current = current[prop];
+      }
+      if (current === undefined) return null;
+    }
+    
+    return current;
+  }
+
+  /**
+   * Validate parameters before tool execution
+   */
+  private validateParameters(tool: string, params: any): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    // Check for common issues
+    if (typeof params !== 'object' || params === null) {
+      errors.push('Parameters must be an object');
+      return { valid: false, errors };
+    }
+    
+    // Check for unresolved step references
+    const paramsStr = JSON.stringify(params);
+    if (paramsStr.includes('${step_')) {
+      errors.push('Unresolved step reference found in parameters');
+    }
+    
+    // Check for placeholder text
+    if (paramsStr.includes('ObjectId of') || paramsStr.includes('placeholder')) {
+      errors.push('Placeholder text found in parameters');
+    }
+    
+    // Check for string "null" instead of actual null
+    for (const [key, value] of Object.entries(params)) {
+      if (value === "null") {
+        errors.push(`Parameter "${key}" has string "null" instead of null value`);
+      }
+    }
+    
+    return { valid: errors.length === 0, errors };
   }
 }

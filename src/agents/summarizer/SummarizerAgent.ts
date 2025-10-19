@@ -40,9 +40,9 @@ export class SummarizerAgent {
       const context: SummaryContext = {
         execution_id: executionId,
         plan_request_id: execution.planRequestId,
-        user_query: plan.query,
-        plan: plan.plan,
-        execution_results: execution.results,
+        user_query: plan?.query || 'Unknown query',
+        plan: plan?.plan || { steps: [], metadata: { query: 'Unknown query', requestId: execution.planRequestId, totalSteps: 0 } },
+        execution_results: execution.results || [],
         execution_status: execution.status,
         execution_time_ms: execution.completedAt && execution.startedAt 
           ? execution.completedAt.getTime() - execution.startedAt.getTime()
