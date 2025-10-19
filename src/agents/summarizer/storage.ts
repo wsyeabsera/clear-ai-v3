@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { SummaryResult, SummaryStorage, SummaryFormat } from './types';
+import { PlanStorage } from '../planner/storage';
 
 const SummarySchema = new mongoose.Schema<SummaryStorage>({
   summary_id: {
@@ -80,11 +81,15 @@ export class SummarizerStorage {
       throw new Error('MongoDB not connected');
     }
 
+    // Fetch the plan to get the user_query
+    const plan = await PlanStorage.getPlanByRequestId(summary.plan_request_id);
+    const user_query = plan?.query || 'Unknown query';
+
     const summaryDoc = new SummaryModel({
       summary_id: summary.summary_id,
       execution_id: summary.execution_id,
       plan_request_id: summary.plan_request_id,
-      user_query: '', // Will be filled from context
+      user_query: user_query,
       format: summary.format,
       content: summary.content,
       structured_data: summary.structured_data
