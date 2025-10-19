@@ -15,6 +15,9 @@ import { PineconeVectorStore } from '../memory/vector-store';
 import { AnalyzerStorage } from '../analyzer/storage';
 import { ExecutionStorage } from '../executor/storage';
 import { AnalyzerMemoryEntry } from '../memory/types';
+import { DataAssessmentService } from './data-assessment';
+import { QueryRealismValidator } from './query-realism-validator';
+import { SmartFilterGenerator } from './smart-filter-generator';
 
 export class PlannerAgent {
   private tools: MCPTool[];
@@ -66,6 +69,15 @@ export class PlannerAgent {
         console.log(`📚 Retrieved analysis feedback from past executions`);
       }
 
+      // Step 1.6: Assess data availability and validate query realism
+      const dataAssessment = await this.assessDataAvailability(query);
+      if (dataAssessment) {
+        console.log(`📊 Data assessment: ${dataAssessment.overallAvailability * 100}% availability`);
+        if (dataAssessment.warnings.length > 0) {
+          console.log(`⚠️  Data warnings: ${dataAssessment.warnings.join(', ')}`);
+        }
+      }
+
       // Step 1: Select tools using LLM
       const toolSelection = await this.selectToolsWithLLM(query, provider, analysisFeedback);
       console.log(`🔧 Selected tools: ${toolSelection.tools.join(', ')}`);
@@ -74,6 +86,13 @@ export class PlannerAgent {
       // Step 2: Generate plan using LLM
       const planGeneration = await this.generatePlanWithLLM(query, toolSelection, requestId, provider, analysisFeedback);
       console.log(`📋 Generated plan with ${planGeneration.plan.steps.length} steps`);
+
+      // Step 2.5: Enhance plan with data-aware optimizations
+      const enhancedPlan = await this.enhancePlanWithDataAwareness(planGeneration.plan, query, dataAssessment);
+      if (enhancedPlan !== planGeneration.plan) {
+        console.log(`🔧 Enhanced plan with data-aware optimizations`);
+        planGeneration.plan = enhancedPlan as any;
+      }
 
       // Clean up the plan data to ensure proper types
       planGeneration.plan.steps = planGeneration.plan.steps.map(step => {
@@ -257,33 +276,47 @@ export class PlannerAgent {
   }
 
   /**
-   * Get analysis feedback from past executions to improve planning
+   * Enhanced analysis feedback with empty result pattern learning
    */
   private async getAnalysisFeedback(query: string): Promise<string> {
     try {
-      const historicalAnalyses = await this.analyzerMemoryRepository.search(query, 3);
+      const historicalAnalyses = await this.analyzerMemoryRepository.search(query, 5);
 
       if (historicalAnalyses.length === 0) {
         return '';
       }
+
+      // Analyze patterns in historical data
+      const emptyResultPatterns = this.analyzeEmptyResultPatterns(historicalAnalyses);
+      const dataQualityPatterns = this.analyzeDataQualityPatterns(historicalAnalyses);
+      const adaptiveSuggestions = this.generateAdaptiveSuggestions(query, historicalAnalyses);
 
       const feedbackSummary = historicalAnalyses
         .map(analysis => {
           const evaluationMetrics = analysis.evaluation_metrics || {};
           const successRate = evaluationMetrics.success_rate || 0;
           const efficiency = evaluationMetrics.efficiency_score || 0;
+          const emptyResultRate = (evaluationMetrics as any).empty_result_rate || 0;
+          const dataQualityScore = (evaluationMetrics as any).data_quality_score || 0;
+          const meaningfulResultsRate = (evaluationMetrics as any).meaningful_results_rate || 0;
           const recommendations = analysis.improvement_notes || 'None';
           const failurePatterns = evaluationMetrics.error_patterns || [];
 
           return `Previous Execution Analysis:
 - Success Rate: ${(successRate * 100).toFixed(1)}%
 - Efficiency Score: ${(efficiency * 100).toFixed(1)}%
+- Empty Result Rate: ${(emptyResultRate * 100).toFixed(1)}%
+- Data Quality Score: ${(dataQualityScore * 100).toFixed(1)}%
+- Meaningful Results: ${(meaningfulResultsRate * 100).toFixed(1)}%
 - Recommendations: ${recommendations}
 - Common Issues: ${failurePatterns.join(', ') || 'None identified'}`;
         })
         .join('\n\n');
 
-      return `Historical Context from Similar Queries:\n\n${feedbackSummary}`;
+      const patternInsights = this.buildPatternInsights(emptyResultPatterns, dataQualityPatterns);
+      const adaptiveGuidance = this.buildAdaptiveGuidance(adaptiveSuggestions);
+
+      return `Historical Context from Similar Queries:\n\n${feedbackSummary}\n\n${patternInsights}\n\n${adaptiveGuidance}`;
     } catch (error) {
       console.warn('Failed to retrieve analysis feedback:', error);
       return '';
@@ -559,7 +592,7 @@ export class PlannerAgent {
   private fixCommonVariableMistakes(steps: PlanStep[]): PlanStep[] {
     return steps.map((step, stepIndex) => {
       const fixedParams = this.fixVariableReferencesInParams(step.params, stepIndex);
-      
+
       // Additional fix: Convert .uid to ._id and fix path structure in variable references
       const uidFixedParams = this.fixUidToIdReferences(fixedParams);
 
@@ -581,9 +614,9 @@ export class PlannerAgent {
     if (typeof params !== 'object' || params === null) {
       return params;
     }
-    
+
     const fixed: any = Array.isArray(params) ? [] : {};
-    
+
     for (const [key, value] of Object.entries(params)) {
       if (typeof value === 'string' && (value.includes('.uid') || value.includes('.items['))) {
         // Convert .uid to ._id and .items[0] to [0] in variable references
@@ -597,7 +630,7 @@ export class PlannerAgent {
         fixed[key] = value;
       }
     }
-    
+
     return fixed;
   }
 
@@ -681,10 +714,355 @@ export class PlannerAgent {
   }
 
   /**
+   * Analyze empty result patterns from historical data
+   */
+  private analyzeEmptyResultPatterns(historicalAnalyses: any[]): {
+    commonReasons: string[];
+    affectedTools: string[];
+    averageEmptyRate: number;
+    suggestions: string[];
+  } {
+    const emptyResultReasons: string[] = [];
+    const affectedTools: string[] = [];
+    let totalEmptyRate = 0;
+    let emptyResultCount = 0;
+
+    historicalAnalyses.forEach(analysis => {
+      const metrics = analysis.evaluation_metrics || {};
+      const emptyResultRate = metrics.empty_result_rate || 0;
+
+      if (emptyResultRate > 0) {
+        emptyResultCount++;
+        totalEmptyRate += emptyResultRate;
+
+        // Extract patterns from error patterns
+        const errorPatterns = metrics.error_patterns || [];
+        errorPatterns.forEach((pattern: string) => {
+          if (pattern.includes('Empty result')) {
+            emptyResultReasons.push(pattern);
+          }
+        });
+      }
+    });
+
+    const averageEmptyRate = emptyResultCount > 0 ? totalEmptyRate / emptyResultCount : 0;
+    const commonReasons = this.getMostCommonReasons(emptyResultReasons);
+    const suggestions = this.generateEmptyResultSuggestions(commonReasons);
+
+    return {
+      commonReasons,
+      affectedTools,
+      averageEmptyRate,
+      suggestions
+    };
+  }
+
+  /**
+   * Analyze data quality patterns from historical data
+   */
+  private analyzeDataQualityPatterns(historicalAnalyses: any[]): {
+    averageQualityScore: number;
+    qualityTrend: 'improving' | 'declining' | 'stable';
+    commonQualityIssues: string[];
+    suggestions: string[];
+  } {
+    const qualityScores: number[] = [];
+    const qualityIssues: string[] = [];
+
+    historicalAnalyses.forEach(analysis => {
+      const metrics = analysis.evaluation_metrics || {};
+      const qualityScore = metrics.data_quality_score || 0;
+
+      if (qualityScore > 0) {
+        qualityScores.push(qualityScore);
+      }
+
+      // Extract quality-related issues from recommendations
+      const recommendations = analysis.improvement_notes || '';
+      if (recommendations.includes('quality') || recommendations.includes('data')) {
+        qualityIssues.push(recommendations);
+      }
+    });
+
+    const averageQualityScore = qualityScores.length > 0
+      ? qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length
+      : 0;
+
+    const qualityTrend = this.determineQualityTrend(qualityScores);
+    const commonQualityIssues = this.getMostCommonReasons(qualityIssues);
+    const suggestions = this.generateQualitySuggestions(commonQualityIssues);
+
+    return {
+      averageQualityScore,
+      qualityTrend,
+      commonQualityIssues,
+      suggestions
+    };
+  }
+
+  /**
+   * Generate adaptive suggestions based on query and historical data
+   */
+  private generateAdaptiveSuggestions(query: string, historicalAnalyses: any[]): string[] {
+    const suggestions: string[] = [];
+    const queryLower = query.toLowerCase();
+
+    // Analyze query patterns that led to empty results
+    const emptyResultQueries = historicalAnalyses.filter(analysis => {
+      const metrics = analysis.evaluation_metrics || {};
+      return (metrics.empty_result_rate || 0) > 0.3; // 30% or more empty results
+    });
+
+    if (emptyResultQueries.length > 0) {
+      suggestions.push('Consider using broader search criteria to avoid empty results');
+      suggestions.push('Try removing specific filters that may be too restrictive');
+    }
+
+    // Analyze query patterns that led to good results
+    const goodResultQueries = historicalAnalyses.filter(analysis => {
+      const metrics = analysis.evaluation_metrics || {};
+      return (metrics.meaningful_results_rate || 0) > 0.8; // 80% or more meaningful results
+    });
+
+    if (goodResultQueries.length > 0) {
+      suggestions.push('Use similar query patterns that have worked well in the past');
+    }
+
+    // Query-specific suggestions
+    if (queryLower.includes('facility')) {
+      suggestions.push('For facility queries, consider including location or type filters');
+    } else if (queryLower.includes('shipment')) {
+      suggestions.push('For shipment queries, consider including date range or status filters');
+    } else if (queryLower.includes('contract')) {
+      suggestions.push('For contract queries, ensure client_id parameter is provided');
+    }
+
+    return suggestions;
+  }
+
+  /**
+   * Build pattern insights from analysis
+   */
+  private buildPatternInsights(emptyResultPatterns: any, dataQualityPatterns: any): string {
+    let insights = '';
+
+    if (emptyResultPatterns.averageEmptyRate > 0.2) {
+      insights += `⚠️ Empty Result Patterns Detected:\n`;
+      insights += `- Average Empty Rate: ${(emptyResultPatterns.averageEmptyRate * 100).toFixed(1)}%\n`;
+      insights += `- Common Reasons: ${emptyResultPatterns.commonReasons.join(', ')}\n`;
+      insights += `- Suggestions: ${emptyResultPatterns.suggestions.join('; ')}\n\n`;
+    }
+
+    if (dataQualityPatterns.averageQualityScore < 0.7) {
+      insights += `📊 Data Quality Issues:\n`;
+      insights += `- Average Quality Score: ${(dataQualityPatterns.averageQualityScore * 100).toFixed(1)}%\n`;
+      insights += `- Quality Trend: ${dataQualityPatterns.qualityTrend}\n`;
+      insights += `- Common Issues: ${dataQualityPatterns.commonQualityIssues.join(', ')}\n`;
+      insights += `- Suggestions: ${dataQualityPatterns.suggestions.join('; ')}\n\n`;
+    }
+
+    return insights;
+  }
+
+  /**
+   * Build adaptive guidance from suggestions
+   */
+  private buildAdaptiveGuidance(adaptiveSuggestions: string[]): string {
+    if (adaptiveSuggestions.length === 0) {
+      return '';
+    }
+
+    return `🎯 Adaptive Query Guidance:\n${adaptiveSuggestions.map(s => `- ${s}`).join('\n')}`;
+  }
+
+  /**
+   * Get most common reasons from a list
+   */
+  private getMostCommonReasons(reasons: string[]): string[] {
+    const reasonCounts: Record<string, number> = {};
+    reasons.forEach(reason => {
+      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+    });
+
+    return Object.entries(reasonCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([reason]) => reason);
+  }
+
+  /**
+   * Generate suggestions for empty result issues
+   */
+  private generateEmptyResultSuggestions(commonReasons: string[]): string[] {
+    const suggestions: string[] = [];
+
+    if (commonReasons.some(r => r.includes('Restrictive filters'))) {
+      suggestions.push('Use broader filter criteria');
+    }
+    if (commonReasons.some(r => r.includes('Invalid parameters'))) {
+      suggestions.push('Validate parameter formats and values');
+    }
+    if (commonReasons.some(r => r.includes('Date range'))) {
+      suggestions.push('Use realistic date ranges');
+    }
+    if (commonReasons.some(r => r.includes('Location'))) {
+      suggestions.push('Verify location parameters match existing data');
+    }
+
+    return suggestions;
+  }
+
+  /**
+   * Generate suggestions for data quality issues
+   */
+  private generateQualitySuggestions(commonIssues: string[]): string[] {
+    const suggestions: string[] = [];
+
+    if (commonIssues.some(issue => issue.includes('completeness'))) {
+      suggestions.push('Ensure all required fields are populated');
+    }
+    if (commonIssues.some(issue => issue.includes('consistency'))) {
+      suggestions.push('Use consistent data formats and structures');
+    }
+    if (commonIssues.some(issue => issue.includes('validation'))) {
+      suggestions.push('Add data validation checks');
+    }
+
+    return suggestions;
+  }
+
+  /**
+   * Determine quality trend from scores
+   */
+  private determineQualityTrend(qualityScores: number[]): 'improving' | 'declining' | 'stable' {
+    if (qualityScores.length < 2) return 'stable';
+
+    const firstHalf = qualityScores.slice(0, Math.floor(qualityScores.length / 2));
+    const secondHalf = qualityScores.slice(Math.floor(qualityScores.length / 2));
+
+    const firstHalfAvg = firstHalf.reduce((sum, score) => sum + score, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, score) => sum + score, 0) / secondHalf.length;
+
+    const difference = secondHalfAvg - firstHalfAvg;
+    const threshold = 0.1; // 10% change threshold
+
+    if (difference > threshold) return 'improving';
+    if (difference < -threshold) return 'declining';
+    return 'stable';
+  }
+
+  /**
    * Test the agent with a simple query
    */
   async test(query: string = 'List all shipments'): Promise<PlanResponse> {
     console.log(`Testing planner agent with query: "${query}"`);
     return await this.plan(query);
+  }
+
+  /**
+   * Assess data availability for a query
+   */
+  private async assessDataAvailability(query: string): Promise<any> {
+    try {
+      const dataAssessment = await DataAssessmentService.assessDataAvailability([query]);
+      return dataAssessment;
+    } catch (error) {
+      console.error('Data assessment failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Validate query realism based on available data
+   */
+  private async validateQueryRealism(query: string): Promise<any> {
+    try {
+      const validation = await QueryRealismValidator.validateQuery(query);
+      return validation;
+    } catch (error) {
+      console.error('Query realism validation failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate smart filters for a query
+   */
+  private async generateSmartFilters(query: string, entityType: string): Promise<any> {
+    try {
+      const context = {
+        entityType,
+        baseQuery: query,
+        existingFilters: {},
+        userPreferences: {
+          maxResults: 50
+        }
+      };
+
+      const smartFilters = await SmartFilterGenerator.generateSmartFilters(context);
+      return smartFilters;
+    } catch (error) {
+      console.error('Smart filter generation failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Enhance plan with data-aware optimizations
+   */
+  private async enhancePlanWithDataAwareness(
+    plan: Plan,
+    query: string,
+    dataAssessment: any
+  ): Promise<Plan> {
+    try {
+      if (!dataAssessment || dataAssessment.overallAvailability < 0.5) {
+        console.log('⚠️  Low data availability detected, using conservative plan');
+        return plan;
+      }
+
+      // Optimize steps based on data availability
+      const optimizedSteps = plan.steps.map(step => {
+        const entityType = this.extractEntityTypeFromTool(step.tool);
+        if (entityType && dataAssessment.entityAvailability) {
+          const entityData = dataAssessment.entityAvailability.find(
+            (e: any) => e.entityType === entityType
+          );
+
+          if (entityData && entityData.totalCount < 10) {
+            // Add pagination for small datasets
+            if (!step.params.limit) {
+              step.params.limit = Math.min(10, entityData.totalCount);
+            }
+          }
+        }
+        return step;
+      });
+
+      return {
+        ...plan,
+        steps: optimizedSteps
+      };
+    } catch (error) {
+      console.error('Data-aware plan enhancement failed:', error);
+      return plan;
+    }
+  }
+
+  /**
+   * Extract entity type from tool name
+   */
+  private extractEntityTypeFromTool(toolName: string): string | null {
+    const toolToEntityMap: Record<string, string> = {
+      'shipments_list': 'shipments',
+      'facilities_list': 'facilities',
+      'contracts_list': 'contracts',
+      'waste_codes_list': 'waste_codes',
+      'waste_generators_list': 'waste_generators',
+      'inspections_list': 'inspections',
+      'contaminants_list': 'contaminants'
+    };
+
+    return toolToEntityMap[toolName] || null;
   }
 }

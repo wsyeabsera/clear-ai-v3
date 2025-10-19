@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-10-19T18:35:58.696Z",
+  "overallResults": {
+    "totalTests": 4,
+    "totalPassed": 0,
+    "totalFailed": 4,
+    "overallPassRate": 0,
+    "totalDuration": 1939802
+  },
+  "testSuites": [
+    {
+      "testSuite": "Data Joining Intelligence",
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "duration": 622994,
+      "passRate": 0,
+      "metrics": {}
+    },
+    {
+      "testSuite": "Empty Result Intelligence",
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "duration": 395982,
+      "passRate": 0,
+      "metrics": {}
+    },
+    {
+      "testSuite": "Performance Optimization",
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "duration": 918542,
+      "passRate": 0,
+      "metrics": {}
+    },
+    {
+      "testSuite": "Error Recovery Intelligence",
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "duration": 2280,
+      "passRate": 0,
+      "metrics": {}
+    }
+  ],
+  "performanceMetrics": {
+    "dataJoiningSuccess": 0,
+    "emptyResultHandling": 0,
+    "queryRealism": 5,
+    "executionTime": 0,
+    "errorRecovery": 0
+  },
+  "improvements": {
+    "before": {
+      "dataJoiningSuccess": 66.7,
+      "emptyResultHandling": 16.7,
+      "queryRealism": 60,
+      "executionTime": 16800,
+      "errorRecovery": 40
+    },
+    "after": {
+      "dataJoiningSuccess": 0,
+      "emptyResultHandling": 0,
+      "queryRealism": 5,
+      "executionTime": 0,
+      "errorRecovery": 0
+    },
+    "improvement": {
+      "dataJoiningSuccess": -100,
+      "emptyResultHandling": -100,
+      "queryRealism": -91.66666666666666,
+      "executionTime": -100,
+      "errorRecovery": -100
+    }
+  }
+}

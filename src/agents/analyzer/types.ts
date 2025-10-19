@@ -22,6 +22,10 @@ export interface EvaluationMetrics {
   error_patterns: string[];
   retry_frequency: number;
   average_step_time_ms: number;
+  // Enhanced metrics for empty result detection
+  empty_result_rate?: number;
+  data_quality_score?: number;
+  meaningful_results_rate?: number;
 }
 
 export interface AnalysisContext {
