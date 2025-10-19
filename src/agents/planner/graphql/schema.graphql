@@ -10,6 +10,10 @@ type Mutation {
   Delete a plan by request ID
   """
   deletePlan(requestId: String!): Boolean!
+  """
+  Provide feedback from an analysis to improve future plans
+  """
+  provideAnalysisFeedback(planRequestId: String!, analysisId: String!): FeedbackResponse!
 }
 
 type Query {
@@ -84,6 +88,12 @@ type PlanStatusCounts {
 type ProviderCount {
   provider: String!
   count: Int!
+}
+
+type FeedbackResponse {
+  success: Boolean!
+  message: String!
+  feedbackId: String!
 }
 
 enum PlanStatus {

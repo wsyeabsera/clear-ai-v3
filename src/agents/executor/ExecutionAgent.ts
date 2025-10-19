@@ -489,6 +489,7 @@ export class ExecutionAgent {
 
   /**
    * Resolve step references in parameters
+   * Supports both ${step_N.result.field} and ${entity_N.field} patterns
    */
   private resolveStepReferences(params: any, stepResults: ExecutionStepResult[]): any {
     if (typeof params !== 'object' || params === null) {
@@ -498,8 +499,8 @@ export class ExecutionAgent {
     const resolved: any = Array.isArray(params) ? [] : {};
     
     for (const [key, value] of Object.entries(params)) {
-      if (typeof value === 'string' && value.includes('${step_')) {
-        // Resolve step reference
+      if (typeof value === 'string' && (value.includes('${step_') || value.includes('${'))) {
+        // Resolve any variable reference
         resolved[key] = this.resolveExpression(value, stepResults);
       } else if (typeof value === 'object') {
         // Recursively resolve nested objects
@@ -514,22 +515,64 @@ export class ExecutionAgent {
 
   /**
    * Resolve a single step reference expression
+   * Supports both ${step_N.result.field} and ${entity_N.field} patterns
    */
   private resolveExpression(expression: string, stepResults: ExecutionStepResult[]): any {
-    // Match patterns like ${step_0.result[0].uid} or ${step_1.result.id}
-    const match = expression.match(/\$\{step_(\d+)\.result(.*?)\}/);
-    if (!match) return expression;
-    
-    const stepIndex = parseInt(match[1]);
-    const path = match[2];
-    
-    const stepResult = stepResults[stepIndex];
-    if (!stepResult || !stepResult.result) {
+    // First try the standard step pattern: ${step_N.result.field}
+    const stepMatch = expression.match(/\$\{step_(\d+)\.result(.*?)\}/);
+    if (stepMatch) {
+      const stepIndex = parseInt(stepMatch[1]);
+      const path = stepMatch[2];
+
+      const stepResult = stepResults[stepIndex];
+      if (!stepResult || !stepResult.result) {
+        return null;
+      }
+
+      // Navigate the path (e.g., "[0].uid" or ".id")
+      return this.getValueByPath(stepResult.result, path);
+    }
+
+    // Try entity pattern: ${entity_N.field} (e.g., ${facility_1.uid})
+    const entityMatch = expression.match(/\$\{(\w+)_(\d+)\.(\w+)\}/);
+    if (entityMatch) {
+      const entityType = entityMatch[1];
+      const entityIndex = parseInt(entityMatch[2]);
+      const field = entityMatch[3];
+
+      // Find step results that match this entity type
+      const matchingSteps = this.findStepsByEntityType(entityType, stepResults);
+
+      if (matchingSteps.length > entityIndex) {
+        const stepResult = matchingSteps[entityIndex];
+        if (stepResult && stepResult.result) {
+          return this.getValueByPath(stepResult.result, `.${field}`);
+        }
+      }
+
       return null;
     }
-    
-    // Navigate the path (e.g., "[0].uid" or ".id")
-    return this.getValueByPath(stepResult.result, path);
+
+    // If no pattern matches, return the original expression
+    return expression;
+  }
+
+  /**
+   * Find step results that match a specific entity type
+   */
+  private findStepsByEntityType(entityType: string, stepResults: ExecutionStepResult[]): ExecutionStepResult[] {
+    const matchingSteps: ExecutionStepResult[] = [];
+
+    for (const stepResult of stepResults) {
+      if (stepResult.status === 'COMPLETED' && stepResult.result) {
+        // Check if the tool name contains the entity type
+        if (stepResult.tool.includes(entityType)) {
+          matchingSteps.push(stepResult);
+        }
+      }
+    }
+
+    return matchingSteps;
   }
 
   /**
@@ -569,10 +612,25 @@ export class ExecutionAgent {
       return { valid: false, errors };
     }
     
-    // Check for unresolved step references
+    // Check for unresolved variable references
     const paramsStr = JSON.stringify(params);
-    if (paramsStr.includes('${step_')) {
-      errors.push('Unresolved step reference found in parameters');
+    const unresolvedVars = this.findUnresolvedVariables(paramsStr);
+
+    if (unresolvedVars.length > 0) {
+      errors.push(`Unresolved variable references found: ${unresolvedVars.join(', ')}`);
+
+      // Provide specific suggestions for common patterns
+      unresolvedVars.forEach(varRef => {
+        if (varRef.includes('facility_')) {
+          errors.push(`  → Found '${varRef}' - should be '${this.suggestStepReference(varRef, 'facility')}'`);
+        } else if (varRef.includes('shipment_')) {
+          errors.push(`  → Found '${varRef}' - should be '${this.suggestStepReference(varRef, 'shipment')}'`);
+        } else if (varRef.includes('client_')) {
+          errors.push(`  → Found '${varRef}' - should be '${this.suggestStepReference(varRef, 'client')}'`);
+        } else if (varRef.includes('contract_')) {
+          errors.push(`  → Found '${varRef}' - should be '${this.suggestStepReference(varRef, 'contract')}'`);
+        }
+      });
     }
     
     // Check for placeholder text
@@ -588,5 +646,32 @@ export class ExecutionAgent {
     }
     
     return { valid: errors.length === 0, errors };
+  }
+
+  /**
+   * Find all unresolved variable references in a string
+   */
+  private findUnresolvedVariables(str: string): string[] {
+    const variablePattern = /\$\{[^}]+\}/g;
+    const matches = str.match(variablePattern) || [];
+
+    // Filter out properly formatted step references
+    return matches.filter(match => {
+      // Keep if it's not a proper step reference
+      return !match.match(/^\$\{step_\d+\.result/);
+    });
+  }
+
+  /**
+   * Suggest a proper step reference for an entity variable
+   */
+  private suggestStepReference(entityVar: string, entityType: string): string {
+    const match = entityVar.match(/\$\{(\w+)_(\d+)\.(\w+)\}/);
+    if (match) {
+      const index = match[2];
+      const field = match[3];
+      return `\${step_${index}.result.${field}}`;
+    }
+    return `\${step_0.result.${entityType}_id}`;
   }
 }

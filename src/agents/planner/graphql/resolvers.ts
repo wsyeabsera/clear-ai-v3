@@ -23,6 +23,15 @@ export const plannerResolvers = {
         console.error('Error deleting plan:', error);
         throw new Error(`Failed to delete plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
+    },
+
+    provideAnalysisFeedback: async (_: any, { planRequestId, analysisId }: { planRequestId: string; analysisId: string }) => {
+      try {
+        return await plannerAgent.provideFeedback(planRequestId, analysisId);
+      } catch (error) {
+        console.error('Error providing feedback:', error);
+        throw new Error(`Failed to provide feedback: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   },
   

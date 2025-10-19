@@ -271,6 +271,73 @@ ${JSON.stringify(request.toolSchemas, null, 2)}
 
 ${request.analysisFeedback ? `\nAnalysis Feedback from Past Executions:\n${request.analysisFeedback}\n` : ''}
 
+VARIABLE REFERENCE FORMAT (MANDATORY):
+- ALWAYS use: \${step_N.result.field} or \${step_N.result[index].field}
+- NEVER use: \${entity_name.field}, \${facility_1.uid}, \${shipment_2.id}, etc.
+- N is the step index (0-based) that produces the data you need
+- The step must be listed in dependsOn array
+
+FACILITY LOOKUP PATTERN (CRITICAL):
+When the query mentions facility NAMES (not IDs), you MUST:
+1. Use facilities_list to search by name first
+2. Extract the facility UID from results
+3. Use that UID in subsequent steps
+
+NEVER generate fake facility IDs like "5f9b3a3a3a3a..."
+ALWAYS use facilities_list to find facilities by name first
+
+STEP-BY-STEP EXAMPLES:
+
+Example 1: List and Get Pattern
+Query: "Get details for the first 3 facilities"
+Step 0: facilities_list → returns {items: [{uid: "abc"}, {uid: "def"}, {uid: "ghi"}]}
+Step 1: facilities_get → params: {"id": "\${step_0.result[0]._id}"}, dependsOn: [0]
+Step 2: facilities_get → params: {"id": "\${step_0.result[1]._id}"}, dependsOn: [0]
+Step 3: facilities_get → params: {"id": "\${step_0.result[2]._id}"}, dependsOn: [0]
+
+Example 2: Get and Update Pattern
+Query: "Update facility ABC's name"
+Step 0: facilities_get → params: {"id": "ABC"}
+Step 1: facilities_update → params: {"id": "\${step_0.result._id}", "name": "New Name"}, dependsOn: [0]
+
+Example 3: List with Filter Pattern
+Query: "Get shipments for facility ABC"
+Step 0: facilities_get → params: {"id": "ABC"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+Example 4: Complex CRUD Chain
+Query: "Create shipment for first facility and update its status"
+Step 0: facilities_list → params: {"page": 1, "limit": 1}
+Step 1: shipments_create → params: {"facility_id": "\${step_0.result[0]._id}", "waste_type": "hazardous"}, dependsOn: [0]
+Step 2: shipments_update → params: {"id": "\${step_1.result._id}", "status": "in_transit"}, dependsOn: [1]
+
+Example 5: Facility Name Search (CRITICAL)
+Query: "Get shipments from Bosco, Bruen and Wehner Sorting Center"
+Step 0: facilities_list → params: {"page": 1, "limit": 10, "name": "Bosco, Bruen and Wehner"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+Example 6: Multiple Facility Names
+Query: "Get shipments from ABC and XYZ facilities"
+Step 0: facilities_list → params: {"page": 1, "limit": 20}
+Step 1: shipments_list → params: {"page": 1, "limit": 100}, dependsOn: [0]
+Note: Filter by facility names in analysis step
+
+Example 7: Single Facility Name
+Query: "Show me all shipments from ABC Facility"
+Step 0: facilities_list → params: {"page": 1, "limit": 10, "name": "ABC Facility"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+ANTI-PATTERNS (NEVER DO THIS):
+❌ {"id": "\${facility_1._id}"} - Wrong! Use step index
+❌ {"id": "\${first_facility}"} - Wrong! Use step index
+❌ {"id": "result_from_step_0"} - Wrong! Use \${step_0.result.field}
+❌ {"id": ""} - Wrong! Never use empty strings
+❌ {"id": "placeholder"} - Wrong! No placeholder text
+❌ {"id": "ObjectId of..."} - Wrong! No descriptive text
+❌ {"page": "1", "limit": "10"} - Wrong! Use numbers not strings
+❌ {"id": "5f9b3a3a3a3a3a3a3a3a..."} - Wrong! Never generate fake facility IDs
+❌ {"id": "Bosco, Bruen and Wehner"} - Wrong! Use facilities_list to find by name first
+
 Requirements:
 - Use proper parameter values (no placeholders)
 - Create dependency chains using \${step_N.result.field} syntax

@@ -22,9 +22,11 @@ export class AnalyzerMemoryRepository {
           execution_id: entry.execution_id,
           plan_request_id: entry.plan_request_id,
           feedback: entry.feedback,
-          evaluation_metrics: entry.evaluation_metrics,
+          success_rate: entry.evaluation_metrics.success_rate,
+          efficiency_score: entry.evaluation_metrics.efficiency_score,
+          error_patterns: entry.evaluation_metrics.error_patterns,
           improvement_notes: entry.improvement_notes,
-          timestamp: entry.metadata.timestamp,
+          timestamp: entry.metadata.timestamp.toISOString(),
           user_query: entry.metadata.user_query
         },
         namespace: 'analyzer_memory'
@@ -47,7 +49,11 @@ export class AnalyzerMemoryRepository {
         execution_id: result.metadata.execution_id,
         plan_request_id: result.metadata.plan_request_id,
         feedback: result.metadata.feedback,
-        evaluation_metrics: result.metadata.evaluation_metrics,
+        evaluation_metrics: {
+          success_rate: result.metadata.success_rate,
+          efficiency_score: result.metadata.efficiency_score,
+          error_patterns: result.metadata.error_patterns
+        },
         improvement_notes: result.metadata.improvement_notes,
         embedding: [], // Not returned from search
         metadata: {
@@ -84,7 +90,11 @@ export class AnalyzerMemoryRepository {
         execution_id: result.metadata.execution_id,
         plan_request_id: result.metadata.plan_request_id,
         feedback: result.metadata.feedback,
-        evaluation_metrics: result.metadata.evaluation_metrics,
+        evaluation_metrics: {
+          success_rate: result.metadata.success_rate,
+          efficiency_score: result.metadata.efficiency_score,
+          error_patterns: result.metadata.error_patterns
+        },
         improvement_notes: result.metadata.improvement_notes,
         embedding: [], // Not returned from search
         metadata: {
@@ -120,9 +130,11 @@ export class AnalyzerMemoryRepository {
           execution_id: entry.execution_id,
           plan_request_id: entry.plan_request_id,
           feedback: entry.feedback,
-          evaluation_metrics: entry.evaluation_metrics,
+          success_rate: entry.evaluation_metrics.success_rate,
+          efficiency_score: entry.evaluation_metrics.efficiency_score,
+          error_patterns: entry.evaluation_metrics.error_patterns,
           improvement_notes: entry.improvement_notes,
-          timestamp: entry.metadata.timestamp,
+          timestamp: entry.metadata.timestamp.toISOString(),
           user_query: entry.metadata.user_query
         },
         namespace: 'analyzer_memory'

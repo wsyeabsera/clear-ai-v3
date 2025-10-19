@@ -29,6 +29,10 @@ export class PlanValidator {
       warnings.push(...stepValidation.warnings);
     });
     
+    // Validate variable references
+    const variableErrors = this.validateVariableReferences(plan.steps);
+    errors.push(...variableErrors);
+
     // Validate dependencies
     const dependencyErrors = this.validateDependencies(plan.steps);
     errors.push(...dependencyErrors);
@@ -201,6 +205,89 @@ export class PlanValidator {
     return circularDeps;
   }
   
+  /**
+   * Validate variable references in plan steps
+   */
+  private validateVariableReferences(steps: PlanStep[]): string[] {
+    const errors: string[] = [];
+
+    steps.forEach((step, stepIndex) => {
+      const paramsStr = JSON.stringify(step.params);
+      const variablePattern = /\$\{[^}]+\}/g;
+      const matches = paramsStr.match(variablePattern) || [];
+
+      matches.forEach(match => {
+        // Check if it's a proper step reference
+        const stepRefMatch = match.match(/^\$\{step_(\d+)\.result/);
+        if (stepRefMatch) {
+          const referencedStepIndex = parseInt(stepRefMatch[1]);
+
+          // Check if referenced step exists
+          if (referencedStepIndex >= stepIndex) {
+            errors.push(`Step ${stepIndex}: Cannot reference step ${referencedStepIndex} (future step)`);
+          } else if (referencedStepIndex < 0) {
+            errors.push(`Step ${stepIndex}: Invalid step reference ${referencedStepIndex}`);
+          } else if (!step.dependsOn?.includes(referencedStepIndex)) {
+            errors.push(`Step ${stepIndex}: References step ${referencedStepIndex} but it's not in dependsOn array`);
+          }
+        } else {
+          // Check for entity pattern (e.g., ${facility_1.uid})
+          const entityMatch = match.match(/^\$\{(\w+)_(\d+)\.(\w+)\}/);
+          if (entityMatch) {
+            const entityType = entityMatch[1];
+            const entityIndex = parseInt(entityMatch[2]);
+            const field = entityMatch[3];
+
+            errors.push(`Step ${stepIndex}: Found '${match}' - should be '${this.suggestStepReference(entityType, entityIndex, field, stepIndex)}'`);
+          } else {
+            // Other invalid patterns
+            errors.push(`Step ${stepIndex}: Invalid variable reference '${match}' - use \${step_N.result.field} format`);
+          }
+        }
+      });
+    });
+
+    return errors;
+  }
+
+  /**
+   * Suggest a proper step reference for an entity variable
+   */
+  private suggestStepReference(entityType: string, entityIndex: number, field: string, currentStepIndex: number): string {
+    // Find steps that might produce this entity type
+    const candidateSteps = this.findStepsByEntityType(entityType, currentStepIndex);
+
+    if (candidateSteps.length > entityIndex) {
+      const stepIndex = candidateSteps[entityIndex];
+      return `\${step_${stepIndex}.result.${field}}`;
+    }
+
+    return `\${step_0.result.${field}}`;
+  }
+
+  /**
+   * Find step indices that might produce a specific entity type
+   */
+  private findStepsByEntityType(entityType: string, maxStepIndex: number): number[] {
+    const steps: number[] = [];
+
+    for (let i = 0; i < maxStepIndex; i++) {
+      // This is a simplified check - in a real implementation, you'd need
+      // to analyze the tool schemas to determine what entity types they produce
+      if (entityType === 'facility' && i < maxStepIndex) {
+        steps.push(i);
+      } else if (entityType === 'shipment' && i < maxStepIndex) {
+        steps.push(i);
+      } else if (entityType === 'client' && i < maxStepIndex) {
+        steps.push(i);
+      } else if (entityType === 'contract' && i < maxStepIndex) {
+        steps.push(i);
+      }
+    }
+
+    return steps;
+  }
+
   /**
    * Get suggestions for fixing validation errors
    */

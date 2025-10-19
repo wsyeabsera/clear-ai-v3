@@ -148,6 +148,11 @@ type Mutation {
   Provide feedback for an execution
   """
   provideFeedback(feedback: FeedbackRequestInput!): FeedbackResult!
+
+  """
+  Provide feedback from an analysis to improve future plans
+  """
+  provideAnalysisFeedback(planRequestId: String!, analysisId: String!): FeedbackResponse!
 }
 
 type Tool {
@@ -428,6 +433,12 @@ type FeedbackResult {
   categories: [String!]
   processed: Boolean!
   created_at: String!
+}
+
+type FeedbackResponse {
+  success: Boolean!
+  message: String!
+  feedbackId: String!
 }
 
 type OrchestratorStats {

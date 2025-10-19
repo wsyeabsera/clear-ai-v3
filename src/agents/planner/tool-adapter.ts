@@ -134,16 +134,16 @@ ${formattedTools}
    */
   private static getCategoryDescription(category: string): string {
     const descriptions: Record<string, string> = {
-      'clients': 'Client management - stores customer information and relationships',
+      'clients': 'Client management - are groups of facilities under a name',
       'facilities': 'Facility management - physical locations for waste processing',
-      'shipments': 'Shipment tracking - waste transport and delivery records',
-      'contaminants': 'Contaminant tracking - harmful substances found in waste',
-      'inspections': 'Inspection records - quality control and compliance checks',
-      'contracts': 'Contract management - agreements and service contracts',
+      'shipments': 'Shipment tracking - onsite waste processing records',
+      'contaminants': 'Contaminant tracking - harmful substances found in shipments',
+      'inspections': 'Inspection records - quality control and compliance checks on shipments',
+      'contracts': 'Contract management - declared waste types and quantities for a waste generator',
       'waste_codes': 'Waste code classifications - standardized waste categorization',
       'waste_generators': 'Waste generator records - entities producing waste',
-      'waste_properties': 'Waste property details - physical and chemical properties',
-      'bunkers': 'Bunker management - storage containers for waste'
+      'waste_properties': 'Waste property details - physical and chemical properties related to waste codes',
+      'bunkers': 'Bunker management - pictures taken of bunkers during shipments'
     };
     
     return descriptions[category] || 'Entity management operations';
@@ -161,7 +161,7 @@ ${formattedTools}
       'inspections': 'list → get → create/update/delete (requires shipment_id, facility_id)',
       'contracts': 'list → get → create/update/delete (linked to clients)',
       'waste_codes': 'list → get → create/update/delete (reference data)',
-      'waste_generators': 'list → get → create/update/delete (linked to clients)',
+      'waste_generators': 'list → get → create/update/delete (linked to clients and contracts)',
       'waste_properties': 'list → get → create/update/delete (linked to waste_codes)',
       'bunkers': 'list → get → create/update/delete (requires facility_id)'
     };
@@ -278,17 +278,17 @@ ${formattedTools}
    */
   static getCategoryMetadata(): string {
     const categories = [
-      { name: 'clients', desc: 'Client management - stores customer information and relationships', deps: [] },
+      { name: 'clients', desc: 'Client management - are groups of facilities under a name', deps: [] },
       { name: 'facilities', desc: 'Facility management - physical locations for waste processing', deps: [] },
-      { name: 'shipments', desc: 'Shipment tracking - waste transport and delivery records', deps: ['facilities', 'clients'] },
-      { name: 'contaminants', desc: 'Contaminant tracking - harmful substances found in waste', deps: ['shipments'] },
-      { name: 'inspections', desc: 'Inspection records - quality control and compliance checks', deps: ['facilities', 'shipments'] },
-      { name: 'contracts', desc: 'Contract management - agreements and service contracts', deps: ['clients'] },
-      { name: 'waste_codes', desc: 'Waste code classifications - standardized waste categorization', deps: [] },
-      { name: 'waste_generators', desc: 'Waste generator records - entities producing waste', deps: ['clients'] },
-      { name: 'shipment_waste_compositions', desc: 'Waste composition data for shipments', deps: ['shipments', 'waste_codes'] },
-      { name: 'waste_properties', desc: 'Waste property details - physical and chemical properties', deps: ['waste_codes'] },
-      { name: 'bunkers', desc: 'Bunker management - storage containers for waste', deps: ['facilities'] }
+      { name: 'shipments', desc: 'Shipment tracking - onsite waste processing records', deps: ['facilities', 'clients'] },
+      { name: 'contaminants', desc: 'Contaminant tracking - harmful substances found in shipments', deps: ['shipments', 'facilities'] },
+      { name: 'inspections', desc: 'Inspection records - quality control and compliance checks on shipments', deps: ['facilities', 'shipments'] },
+      { name: 'contracts', desc: 'Contract management - declared waste types and quantities for a waste generator', deps: ['clients'] },
+      { name: 'waste_codes', desc: 'Waste code classifications - standardized waste categorization for waste properties', deps: [] },
+      { name: 'waste_generators', desc: 'Waste generator records - entities producing waste and contracts', deps: ['clients', 'contracts'] },
+      { name: 'shipment_waste_compositions', desc: 'Waste composition data for shipments - detailed analysis of waste types and quantities', deps: ['shipments', 'waste_codes'] },
+      { name: 'waste_properties', desc: 'Waste property details - physical and chemical properties related to waste codes', deps: ['waste_codes'] },
+      { name: 'bunkers', desc: 'Bunker management - pictures taken of bunkers during shipments', deps: ['facilities'] }
     ];
 
     let result = 'Available Categories:\n';
@@ -322,7 +322,7 @@ ${formattedTools}
       'facilities': [],
       'shipments': ['facilities', 'clients'],
       'contaminants': ['shipments'],
-      'inspections': ['facilities', 'shipments'],
+      'inspections': ['shipments', 'facilities'],
       'contracts': ['clients'],
       'waste_codes': [],
       'waste_generators': ['clients'],

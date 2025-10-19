@@ -91,7 +91,7 @@ export class GroqService {
       apiKey: process.env.GROQ_API_KEY || '',
       model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
       temperature: parseFloat(process.env.PLANNER_TEMPERATURE || '0.3'),
-      maxTokens: parseInt(process.env.PLANNER_MAX_TOKENS || '2000'),
+      maxTokens: parseInt(process.env.PLANNER_MAX_TOKENS || '4000'),
       timeout: parseInt(process.env.PLANNER_TIMEOUT_MS || '30000'),
       ...config
     };
@@ -213,12 +213,35 @@ export class GroqService {
       // Clean up the response to extract JSON from markdown if needed
       const cleanedContent = this.extractJSONFromResponse(content);
       
+      // Validate JSON before parsing
+      const validation = this.validateJSON(cleanedContent);
+      if (!validation.valid) {
+        console.error('JSON validation failed:', validation.errors);
+        console.error('Content length:', cleanedContent.length);
+        console.error('First 500 chars:', cleanedContent.substring(0, 500));
+        console.error('Last 500 chars:', cleanedContent.substring(Math.max(0, cleanedContent.length - 500)));
+
+        // Check for truncation specifically
+        if (this.detectTruncation(cleanedContent)) {
+          throw new Error(`Response was truncated. Content length: ${cleanedContent.length}. Consider increasing maxTokens or simplifying the query.`);
+        }
+      }
+
       let result;
       try {
         result = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('JSON parsing failed, attempting to fix:', parseError);
-        console.error('Cleaned content:', cleanedContent);
+        console.error('Content length:', cleanedContent.length);
+        console.error('First 500 chars:', cleanedContent.substring(0, 500));
+        console.error('Last 500 chars:', cleanedContent.substring(Math.max(0, cleanedContent.length - 500)));
+
+        // Check for truncation
+        if (this.detectTruncation(cleanedContent)) {
+          const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+          const position = errorMessage.match(/position (\d+)/)?.[1] || 'unknown';
+          throw new Error(`Response was truncated at position ${position}. Content length: ${cleanedContent.length}. Consider increasing maxTokens or simplifying the query.`);
+        }
         
         // Try to fix common JSON issues
         let fixedContent = this.fixCommonJSONIssues(cleanedContent);
@@ -294,19 +317,86 @@ export class GroqService {
   }
 
   /**
+   * Validate JSON content before parsing
+   */
+  private validateJSON(content: string): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Check for truncation indicators
+    if (this.detectTruncation(content)) {
+      errors.push('Response appears to be truncated');
+    }
+
+    // Check for unterminated strings
+    const stringMatches = content.match(/"[^"]*$/);
+    if (stringMatches) {
+      errors.push('Unterminated string detected');
+    }
+
+    // Check for missing closing brackets
+    const openBraces = (content.match(/\{/g) || []).length;
+    const closeBraces = (content.match(/\}/g) || []).length;
+    if (openBraces !== closeBraces) {
+      errors.push(`Mismatched braces: ${openBraces} open, ${closeBraces} close`);
+    }
+
+    const openBrackets = (content.match(/\[/g) || []).length;
+    const closeBrackets = (content.match(/\]/g) || []).length;
+    if (openBrackets !== closeBrackets) {
+      errors.push(`Mismatched brackets: ${openBrackets} open, ${closeBrackets} close`);
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Detect if JSON response was truncated
+   */
+  private detectTruncation(content: string): boolean {
+    // Check for common truncation patterns
+    if (content.endsWith('...') || content.endsWith('...\n')) {
+      return true;
+    }
+
+    // Check if content ends mid-string
+    const lastQuoteIndex = content.lastIndexOf('"');
+    const lastNewlineIndex = content.lastIndexOf('\n');
+    if (lastQuoteIndex > lastNewlineIndex && !content.endsWith('"')) {
+      return true;
+    }
+
+    // Check if content ends mid-object/array
+    const trimmed = content.trim();
+    if (!trimmed.endsWith('}') && !trimmed.endsWith(']')) {
+      return true;
+    }
+
+    // Check for extremely long repeated patterns (hallucination)
+    const repeatedPattern = /(.)\1{100,}/;
+    if (repeatedPattern.test(content)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Extract JSON from response, handling markdown formatting
    */
   private extractJSONFromResponse(content: string): string {
     // Remove markdown code blocks if present
     let cleaned = content.trim();
-    
+
     // Check if response is wrapped in markdown code blocks
     if (cleaned.startsWith('```json') && cleaned.endsWith('```')) {
       cleaned = cleaned.slice(7, -3).trim();
     } else if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
       cleaned = cleaned.slice(3, -3).trim();
     }
-    
+
     // Remove any leading/trailing text that's not JSON
     const lines = cleaned.split('\n');
     let jsonLines: string[] = [];
@@ -337,7 +427,7 @@ export class GroqService {
         }
       }
     }
-    
+
     if (jsonLines.length > 0) {
       cleaned = jsonLines.join('\n');
     } else {
@@ -569,21 +659,81 @@ Generate a detailed execution plan with:
 ${request.analysisFeedback ? '5. Apply lessons learned from past executions' : ''}
 ${request.analysisFeedback ? '6. Avoid patterns that caused issues in similar queries' : ''}
 
+VARIABLE REFERENCE FORMAT (MANDATORY):
+- ALWAYS use: \${step_N.result.field} or \${step_N.result[index].field}
+- NEVER use: \${entity_name.field}, \${facility_1.uid}, \${shipment_2.id}, etc.
+- N is the step index (0-based) that produces the data you need
+- The step must be listed in dependsOn array
+
+FACILITY LOOKUP PATTERN (CRITICAL):
+When the query mentions facility NAMES (not IDs), you MUST:
+1. Use facilities_list to search by name first
+2. Extract the facility UID from results
+3. Use that UID in subsequent steps
+
+NEVER generate fake facility IDs like "5f9b3a3a3a3a..."
+ALWAYS use facilities_list to find facilities by name first
+
+STEP-BY-STEP EXAMPLES:
+
+Example 1: List and Get Pattern
+Query: "Get details for the first 3 facilities"
+Step 0: facilities_list → returns {items: [{uid: "abc"}, {uid: "def"}, {uid: "ghi"}]}
+Step 1: facilities_get → params: {"id": "\${step_0.result[0]._id}"}, dependsOn: [0]
+Step 2: facilities_get → params: {"id": "\${step_0.result[1]._id}"}, dependsOn: [0]
+Step 3: facilities_get → params: {"id": "\${step_0.result[2]._id}"}, dependsOn: [0]
+
+Example 2: Get and Update Pattern
+Query: "Update facility ABC's name"
+Step 0: facilities_get → params: {"id": "ABC"}
+Step 1: facilities_update → params: {"id": "\${step_0.result._id}", "name": "New Name"}, dependsOn: [0]
+
+Example 3: List with Filter Pattern
+Query: "Get shipments for facility ABC"
+Step 0: facilities_get → params: {"id": "ABC"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+Example 4: Complex CRUD Chain
+Query: "Create shipment for first facility and update its status"
+Step 0: facilities_list → params: {"page": 1, "limit": 1}
+Step 1: shipments_create → params: {"facility_id": "\${step_0.result[0]._id}", "waste_type": "hazardous"}, dependsOn: [0]
+Step 2: shipments_update → params: {"id": "\${step_1.result._id}", "status": "in_transit"}, dependsOn: [1]
+
+Example 5: Facility Name Search (CRITICAL)
+Query: "Get shipments from Bosco, Bruen and Wehner Sorting Center"
+Step 0: facilities_list → params: {"page": 1, "limit": 10, "name": "Bosco, Bruen and Wehner"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+Example 6: Multiple Facility Names
+Query: "Get shipments from ABC and XYZ facilities"
+Step 0: facilities_list → params: {"page": 1, "limit": 20}
+Step 1: shipments_list → params: {"page": 1, "limit": 100}, dependsOn: [0]
+Note: Filter by facility names in analysis step
+
+Example 7: Single Facility Name
+Query: "Show me all shipments from ABC Facility"
+Step 0: facilities_list → params: {"page": 1, "limit": 10, "name": "ABC Facility"}
+Step 1: shipments_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 10}, dependsOn: [0]
+
+ANTI-PATTERNS (NEVER DO THIS):
+❌ {"id": "\${facility_1._id}"} - Wrong! Use step index
+❌ {"id": "\${first_facility}"} - Wrong! Use step index
+❌ {"id": "result_from_step_0"} - Wrong! Use \${step_0.result.field}
+❌ {"id": ""} - Wrong! Never use empty strings
+❌ {"id": "placeholder"} - Wrong! No placeholder text
+❌ {"id": "ObjectId of..."} - Wrong! No descriptive text
+❌ {"page": "1", "limit": "10"} - Wrong! Use numbers not strings
+❌ {"id": "5f9b3a3a3a3a3a3a3a3a..."} - Wrong! Never generate fake facility IDs
+❌ {"id": "Bosco, Bruen and Wehner"} - Wrong! Use facilities_list to find by name first
+
 CRITICAL PARAMETER RULES:
 - For list operations: ALWAYS include page: 1, limit: 10
-- For get operations: Use step references like {"uid": "\${step_0.result[0].uid}"}
+- For get operations: Use step references like {"id": "\${step_0.result[0]._id}"}
 - For optional filters: Use null (not "null" string) or omit the parameter
 - For dates: Use ISO 8601 format: "2024-01-01T00:00:00.000Z"
 - For booleans: Use true/false (not strings)
 - Use EXACT parameter names from tool schemas (e.g., "uid" not "id")
 - NEVER use placeholder text like "ObjectId of..." or "null" as strings
-
-EXAMPLES:
-Good: {"page": 1, "limit": 10, "date_from": "2024-01-01T00:00:00.000Z"}
-Good: {"uid": "\${step_0.result[0].uid}"}
-Bad: {"page": "1", "limit": "10"}  // Wrong: strings instead of numbers
-Bad: {"uid": "ObjectId of first item"}  // Wrong: placeholder text
-Bad: {"uid": ""}  // Wrong: empty string
 
 IMPORTANT: dependsOn must be an array of numbers representing step indices (e.g., [0, 1] not [{"step": 0}]).
 
