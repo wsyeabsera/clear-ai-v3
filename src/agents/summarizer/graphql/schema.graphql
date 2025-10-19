@@ -1,0 +1,68 @@
+# GraphQL schema for the Summarizer Agent
+
+type Mutation {
+  """
+  Generate a summary for an execution
+  """
+  generateSummary(executionId: String!, format: SummaryFormat): SummaryResult!
+}
+
+type Query {
+  """
+  Get summary by summary ID
+  """
+  getSummary(summaryId: String!): SummaryResult
+  
+  """
+  Get summary by execution ID
+  """
+  getSummaryByExecutionId(executionId: String!): SummaryResult
+  
+  """
+  Get summary statistics
+  """
+  getSummaryStatistics: SummaryStatistics!
+}
+
+type SummaryResult {
+  summary_id: String!
+  execution_id: String!
+  plan_request_id: String!
+  format: SummaryFormat!
+  content: String!
+  structured_data: StructuredSummary
+}
+
+type StructuredSummary {
+  user_query: String!
+  answer: String!
+  steps_executed: Int!
+  success: Boolean!
+  key_results: [JSON!]!
+  errors: [String!]
+  execution_time_ms: Int!
+  recommendations: [String!]
+}
+
+type SummaryStatistics {
+  total: Int!
+  by_format: SummaryFormatCounts!
+  average_content_length: Float!
+  success_rate: Float!
+}
+
+type SummaryFormatCounts {
+  JSON: Int!
+  MARKDOWN: Int!
+  PLAIN_TEXT: Int!
+  STRUCTURED: Int!
+}
+
+enum SummaryFormat {
+  JSON
+  MARKDOWN
+  PLAIN_TEXT
+  STRUCTURED
+}
+
+scalar JSON

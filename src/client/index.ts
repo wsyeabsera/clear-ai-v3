@@ -7,6 +7,9 @@ import { MCPClient } from './MCPClient';
 import { DynamicToolExecutor } from './DynamicToolExecutor';
 import { plannerResolvers } from '../agents/planner/graphql/resolvers';
 import { executorResolvers } from '../agents/executor/graphql/resolvers';
+import { analyzerResolvers } from '../agents/analyzer/graphql/resolvers';
+import { summarizerResolvers } from '../agents/summarizer/graphql/resolvers';
+import { orchestratorResolvers } from '../agents/orchestrator/graphql/resolvers';
 import { connectToDatabase } from '../server/database/connection';
 import GraphQLJSON from 'graphql-type-json';
 
@@ -30,6 +33,9 @@ const resolvers = {
     },
     ...plannerResolvers.Query,
     ...executorResolvers.Query,
+    ...analyzerResolvers.Query,
+    ...summarizerResolvers.Query,
+    ...orchestratorResolvers.Query,
   },
   
   Mutation: {
@@ -38,6 +44,9 @@ const resolvers = {
     },
     ...plannerResolvers.Mutation,
     ...executorResolvers.Mutation,
+    ...analyzerResolvers.Mutation,
+    ...summarizerResolvers.Mutation,
+    ...orchestratorResolvers.Mutation,
   },
 };
 

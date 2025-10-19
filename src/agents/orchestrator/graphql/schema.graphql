@@ -1,0 +1,224 @@
+# GraphQL schema for the Orchestrator Agent
+
+type Mutation {
+  """
+  Execute a full cycle: plan, execute, analyze, and summarize
+  """
+  executeFullCycle(request: FullCycleRequestInput!): FullCycleResult!
+  
+  """
+  Provide feedback for an execution
+  """
+  provideFeedback(feedback: FeedbackRequestInput!): FeedbackResult!
+}
+
+type Query {
+  """
+  Get full cycle result by request ID
+  """
+  getFullCycleResult(requestId: String!): FullCycleResult
+  
+  """
+  Get orchestrator statistics
+  """
+  getOrchestratorStatistics: OrchestratorStats!
+}
+
+type FullCycleResult {
+  request_id: String!
+  execution_id: String!
+  analysis_id: String!
+  summary_id: String!
+  query: String!
+  plan: PlanResponse!
+  execution: ExecutionResponse!
+  analysis: AnalysisResult!
+  summary: SummaryResult!
+  success: Boolean!
+  total_time_ms: Int!
+  created_at: String!
+}
+
+type FeedbackResult {
+  feedback_id: String!
+  execution_id: String!
+  user_feedback: String!
+  rating: Int
+  categories: [String!]
+  processed: Boolean!
+  created_at: String!
+}
+
+type OrchestratorStats {
+  total_cycles: Int!
+  successful_cycles: Int!
+  failed_cycles: Int!
+  average_cycle_time_ms: Float!
+  success_rate: Float!
+  average_plan_steps: Float!
+  average_execution_time_ms: Float!
+  common_failure_patterns: [FailurePatternCount!]!
+  top_queries: [QueryCount!]!
+}
+
+type FailurePatternCount {
+  pattern: String!
+  count: Int!
+}
+
+type QueryCount {
+  query: String!
+  count: Int!
+}
+
+input FullCycleRequestInput {
+  query: String!
+  llm_provider: String
+  execution_config: ExecutionConfigInput
+  summary_format: SummaryFormat
+}
+
+input FeedbackRequestInput {
+  execution_id: String!
+  user_feedback: String!
+  rating: Int
+  categories: [String!]
+}
+
+input ExecutionConfigInput {
+  maxRetries: Int
+  retryDelayMs: Int
+  enableRollback: Boolean
+  continueOnError: Boolean
+  parallelExecutionLimit: Int
+}
+
+# Import types from other agents
+type PlanResponse {
+  requestId: String!
+  query: String!
+  plan: Plan!
+  status: PlanStatus!
+  createdAt: String!
+  executionTimeMs: Int
+  validationErrors: [String!]!
+}
+
+type Plan {
+  steps: [PlanStep!]!
+  metadata: PlanMetadata!
+}
+
+type PlanStep {
+  tool: String!
+  params: JSON!
+  dependsOn: [Int!]!
+  parallel: Boolean!
+  description: String
+}
+
+type PlanMetadata {
+  query: String!
+  requestId: String!
+  estimatedDurationMs: Int
+  totalSteps: Int!
+  parallelSteps: Int!
+}
+
+type ExecutionResponse {
+  executionId: String!
+  planRequestId: String!
+  status: ExecutionStatus!
+  startedAt: String
+  completedAt: String
+  totalSteps: Int!
+  completedSteps: Int!
+  failedSteps: Int!
+  results: [ExecutionStepResult!]!
+  error: String
+}
+
+type ExecutionStepResult {
+  stepIndex: Int!
+  tool: String!
+  params: JSON!
+  status: StepStatus!
+  result: JSON
+  error: String
+  startedAt: String
+  completedAt: String
+  retryCount: Int!
+  dependencies: [Int!]!
+}
+
+type AnalysisResult {
+  analysis_id: String!
+  execution_id: String!
+  plan_request_id: String!
+  feedback: String!
+  evaluation_metrics: EvaluationMetrics!
+  improvement_notes: String!
+  success_indicators: [String!]!
+  failure_patterns: [String!]!
+  recommendations: [String!]!
+}
+
+type EvaluationMetrics {
+  success_rate: Float!
+  efficiency_score: Float!
+  step_success_rates: JSON!
+  error_patterns: [String!]!
+  retry_frequency: Float!
+  average_step_time_ms: Float!
+}
+
+type SummaryResult {
+  summary_id: String!
+  execution_id: String!
+  plan_request_id: String!
+  format: SummaryFormat!
+  content: String!
+  structured_data: StructuredSummary
+}
+
+type StructuredSummary {
+  user_query: String!
+  answer: String!
+  steps_executed: Int!
+  success: Boolean!
+  key_results: [JSON!]!
+  errors: [String!]
+  execution_time_ms: Int!
+  recommendations: [String!]
+}
+
+enum PlanStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum SummaryFormat {
+  JSON
+  MARKDOWN
+  PLAIN_TEXT
+  STRUCTURED
+}
+
+scalar JSON

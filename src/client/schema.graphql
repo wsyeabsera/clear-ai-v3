@@ -41,6 +41,54 @@ type Query {
   Get execution statistics
   """
   getExecutionStatistics: ExecutionStatistics!
+  
+  # Analyzer Agent Queries
+  """
+  Get analysis by analysis ID
+  """
+  getAnalysis(analysisId: String!): AnalysisResult
+
+  """
+  Get analysis by execution ID
+  """
+  getAnalysisByExecutionId(executionId: String!): AnalysisResult
+
+  """
+  Get analysis statistics
+  """
+  getAnalysisStatistics: AnalysisStatistics!
+
+  """
+  Get historical context for analysis
+  """
+  getHistoricalContext(query: String!, limit: Int): [AnalyzerMemoryEntry!]!
+
+  # Summarizer Agent Queries
+  """
+  Get summary by summary ID
+  """
+  getSummary(summaryId: String!): SummaryResult
+
+  """
+  Get summary by execution ID
+  """
+  getSummaryByExecutionId(executionId: String!): SummaryResult
+
+  """
+  Get summary statistics
+  """
+  getSummaryStatistics: SummaryStatistics!
+
+  # Orchestrator Agent Queries
+  """
+  Get full cycle result by request ID
+  """
+  getFullCycleResult(requestId: String!): FullCycleResult
+
+  """
+  Get orchestrator statistics
+  """
+  getOrchestratorStatistics: OrchestratorStats!
 }
 
 type Mutation {
@@ -77,6 +125,29 @@ type Mutation {
   Retry a failed execution
   """
   retryExecution(executionId: String!): ExecutionResponse!
+  
+  # Analyzer Agent Mutations
+  """
+  Analyze an execution by execution ID
+  """
+  analyzeExecution(executionId: String!): AnalysisResult!
+
+  # Summarizer Agent Mutations
+  """
+  Generate a summary for an execution
+  """
+  generateSummary(executionId: String!, format: SummaryFormat): SummaryResult!
+
+  # Orchestrator Agent Mutations
+  """
+  Execute a full cycle: plan, execute, analyze, and summarize
+  """
+  executeFullCycle(request: FullCycleRequestInput!): FullCycleResult!
+
+  """
+  Provide feedback for an execution
+  """
+  provideFeedback(feedback: FeedbackRequestInput!): FeedbackResult!
 }
 
 type Tool {
@@ -236,4 +307,161 @@ enum StepStatus {
   COMPLETED
   FAILED
   SKIPPED
+}
+
+# Analyzer Agent Types
+
+type AnalysisResult {
+  analysis_id: String!
+  execution_id: String!
+  plan_request_id: String!
+  feedback: String!
+  evaluation_metrics: EvaluationMetrics!
+  improvement_notes: String!
+  success_indicators: [String!]!
+  failure_patterns: [String!]!
+  recommendations: [String!]!
+}
+
+type EvaluationMetrics {
+  success_rate: Float!
+  efficiency_score: Float!
+  step_success_rates: JSON!
+  error_patterns: [String!]!
+  retry_frequency: Float!
+  average_step_time_ms: Float!
+}
+
+type AnalysisStatistics {
+  total: Int!
+  average_success_rate: Float!
+  average_efficiency_score: Float!
+  common_error_patterns: [ErrorPatternCount!]!
+  average_execution_time: Float!
+}
+
+type ErrorPatternCount {
+  pattern: String!
+  count: Int!
+}
+
+type AnalyzerMemoryEntry {
+  id: String!
+  execution_id: String!
+  plan_request_id: String!
+  feedback: String!
+  evaluation_metrics: EvaluationMetrics!
+  improvement_notes: String!
+  metadata: AnalyzerMemoryMetadata!
+}
+
+type AnalyzerMemoryMetadata {
+  timestamp: String!
+  user_query: String!
+}
+
+# Summarizer Agent Types
+
+type SummaryResult {
+  summary_id: String!
+  execution_id: String!
+  plan_request_id: String!
+  format: SummaryFormat!
+  content: String!
+  structured_data: StructuredSummary
+}
+
+type StructuredSummary {
+  user_query: String!
+  answer: String!
+  steps_executed: Int!
+  success: Boolean!
+  key_results: [JSON!]!
+  errors: [String!]
+  execution_time_ms: Int!
+  recommendations: [String!]
+}
+
+type SummaryStatistics {
+  total: Int!
+  by_format: SummaryFormatCounts!
+  average_content_length: Float!
+  success_rate: Float!
+}
+
+type SummaryFormatCounts {
+  JSON: Int!
+  MARKDOWN: Int!
+  PLAIN_TEXT: Int!
+  STRUCTURED: Int!
+}
+
+enum SummaryFormat {
+  JSON
+  MARKDOWN
+  PLAIN_TEXT
+  STRUCTURED
+}
+
+# Orchestrator Agent Types
+
+type FullCycleResult {
+  request_id: String!
+  execution_id: String!
+  analysis_id: String!
+  summary_id: String!
+  query: String!
+  plan: PlanResponse!
+  execution: ExecutionResponse!
+  analysis: AnalysisResult!
+  summary: SummaryResult!
+  success: Boolean!
+  total_time_ms: Int!
+  created_at: String!
+}
+
+type FeedbackResult {
+  feedback_id: String!
+  execution_id: String!
+  user_feedback: String!
+  rating: Int
+  categories: [String!]
+  processed: Boolean!
+  created_at: String!
+}
+
+type OrchestratorStats {
+  total_cycles: Int!
+  successful_cycles: Int!
+  failed_cycles: Int!
+  average_cycle_time_ms: Float!
+  success_rate: Float!
+  average_plan_steps: Float!
+  average_execution_time_ms: Float!
+  common_failure_patterns: [FailurePatternCount!]!
+  top_queries: [QueryCount!]!
+}
+
+type FailurePatternCount {
+  pattern: String!
+  count: Int!
+}
+
+type QueryCount {
+  query: String!
+  count: Int!
+}
+
+input FullCycleRequestInput {
+  query: String!
+  llm_provider: String
+  execution_config: ExecutionConfigInput
+  summary_format: SummaryFormat
+}
+
+input FeedbackRequestInput {
+  execution_id: String!
+  user_feedback: String!
+  rating: Int
+  categories: [String!]
 }
