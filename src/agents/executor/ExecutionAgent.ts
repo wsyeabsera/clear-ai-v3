@@ -442,17 +442,17 @@ export class ExecutionAgent {
   /**
    * Get executions by plan request ID
    */
-  async getExecutionsByPlanId(planRequestId: string): Promise<ExecutionSummary[]> {
+  async getExecutionsByPlanId(planRequestId: string): Promise<ExecutionResponse[]> {
     const executions = await ExecutionStorage.getExecutionsByPlanId(planRequestId);
-    return executions.map(exec => this.mapToExecutionSummary(exec));
+    return executions.map(exec => this.mapToExecutionResponse(exec));
   }
 
   /**
    * Get recent executions
    */
-  async getRecentExecutions(limit: number = 50): Promise<ExecutionSummary[]> {
+  async getRecentExecutions(limit: number = 50): Promise<ExecutionResponse[]> {
     const executions = await ExecutionStorage.getRecentExecutions(limit);
-    return executions.map(exec => this.mapToExecutionSummary(exec));
+    return executions.map(exec => this.mapToExecutionResponse(exec));
   }
 
   /**

@@ -30,7 +30,7 @@ type Query {
   """
   Get recent plans
   """
-  getRecentPlans(limit: Int): [PlanSummary!]!
+  getRecentPlans(limit: Int): [PlanResponse!]!
 }
 
 type PlanResponse {

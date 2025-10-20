@@ -497,14 +497,16 @@ export class PlannerAgent {
   /**
    * Get recent plans
    */
-  async getRecentPlans(limit: number = 50) {
+  async getRecentPlans(limit: number = 50): Promise<PlanResponse[]> {
     const plans = await PlanStorage.getRecentPlans(limit);
     return plans.map(plan => ({
       requestId: plan.requestId,
       query: plan.query,
+      plan: plan.plan,
       status: plan.status,
       createdAt: plan.createdAt.toISOString(),
-      executionTimeMs: plan.executionTimeMs
+      executionTimeMs: plan.executionTimeMs,
+      validationErrors: plan.validationErrors
     }));
   }
 

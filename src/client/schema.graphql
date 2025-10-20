@@ -19,7 +19,7 @@ type Query {
   """
   Get recent plans
   """
-  getRecentPlans(limit: Int): [PlanSummary!]!
+  getRecentPlans(limit: Int): [PlanResponse!]!
   
   # Execution Agent Queries
   """
@@ -30,12 +30,12 @@ type Query {
   """
   Get executions by plan request ID
   """
-  getExecutionsByPlanId(planRequestId: String!): [ExecutionSummary!]!
+  getExecutionsByPlanId(planRequestId: String!): [ExecutionResponse!]!
   
   """
   List recent executions
   """
-  getRecentExecutions(limit: Int): [ExecutionSummary!]!
+  getRecentExecutions(limit: Int): [ExecutionResponse!]!
   
   """
   Get execution statistics
