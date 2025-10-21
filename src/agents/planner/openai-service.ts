@@ -18,6 +18,7 @@ export interface ToolSelectionRequest {
   availableTools: string;
   toolSchemas: Record<string, any>;
   analysisFeedback?: string;
+  failedTools?: string[];
 }
 
 export interface ToolSelectionResponse {
@@ -34,6 +35,7 @@ export interface PlanGenerationRequest {
   entities: string[];
   requestId: string;
   analysisFeedback?: string;
+  failedTools?: string[];
 }
 
 export interface PlanGenerationResponse {
@@ -248,6 +250,17 @@ ${JSON.stringify(request.toolSchemas, null, 2)}
 
 ${request.analysisFeedback ? `\nHistorical Context from Past Executions:\n${request.analysisFeedback}\n` : ''}
 
+CRITICAL INSTRUCTIONS:
+- ONLY select tools from the "Available Tools" list above
+- NEVER invent, create, or hallucinate tool names
+- DO NOT use tools that are not explicitly listed
+${request.failedTools && request.failedTools.length > 0 ? `- NEVER use these tools (they failed in past executions): ${request.failedTools.join(', ')}` : ''}
+
+Tool Selection Rules:
+- If a tool doesn't exist for a comparison operation, use multiple retrieval tools instead
+- For "compare X between A and B", use: lookup A, lookup B, retrieve X from A, retrieve X from B
+- The comparison can be done by retrieving data from both sources separately
+
 Please respond with JSON in this exact format:
 {
   "tools": ["tool1", "tool2"],
@@ -268,6 +281,13 @@ Entities: ${request.entities.join(', ')}
 
 Tool Schemas:
 ${JSON.stringify(request.toolSchemas, null, 2)}
+
+CRITICAL TOOL USAGE RULES:
+- ONLY use tools from the "Selected Tools" list: ${request.selectedTools.join(', ')}
+- NEVER create, invent, or hallucinate tool names
+- Each step MUST use a tool from the Selected Tools list
+- If you cannot complete the query with available tools, use the closest available tools
+${request.failedTools && request.failedTools.length > 0 ? `- FORBIDDEN TOOLS (known to fail): ${request.failedTools.join(', ')} - DO NOT USE THESE` : ''}
 
 ${request.analysisFeedback ? `\nAnalysis Feedback from Past Executions:\n${request.analysisFeedback}\n` : ''}
 

@@ -101,6 +101,7 @@ export interface LLMToolSelectionRequest {
   query: string;
   availableTools: MCPTool[];
   analysisFeedback?: string;
+  failedTools?: string[];
 }
 
 export interface LLMToolSelectionResponse {
@@ -117,6 +118,7 @@ export interface LLMPlanGenerationRequest {
   entities: string[];
   requestId: string;
   analysisFeedback?: string;
+  failedTools?: string[];
 }
 
 export interface LLMPlanGenerationResponse {

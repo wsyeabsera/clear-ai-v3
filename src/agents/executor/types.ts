@@ -52,6 +52,7 @@ export interface ExecutionConfig {
   enableRollback: boolean;       // Default: true
   continueOnError: boolean;      // Default: false
   parallelExecutionLimit: number; // Default: 5
+  executionTimeout?: number;     // Default: 5 minutes
 }
 
 export interface ExecutionResponse {
@@ -85,6 +86,7 @@ export interface ExecutionConfigInput {
   enableRollback?: boolean;
   continueOnError?: boolean;
   parallelExecutionLimit?: number;
+  executionTimeout?: number;
 }
 
 export interface RetryableError extends Error {

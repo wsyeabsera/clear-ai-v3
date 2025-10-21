@@ -219,6 +219,7 @@ enum SummaryFormat {
   MARKDOWN
   PLAIN_TEXT
   STRUCTURED
+  INTELLIGENT
 }
 
 scalar JSON

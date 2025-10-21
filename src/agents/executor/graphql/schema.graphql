@@ -29,12 +29,12 @@ type Query {
   """
   Get executions by plan request ID
   """
-  getExecutionsByPlanId(planRequestId: String!): [ExecutionSummary!]!
+  getExecutionsByPlanId(planRequestId: String!): [ExecutionResponse!]!
   
   """
   List recent executions
   """
-  getRecentExecutions(limit: Int): [ExecutionSummary!]!
+  getRecentExecutions(limit: Int): [ExecutionResponse!]!
   
   """
   Get execution statistics

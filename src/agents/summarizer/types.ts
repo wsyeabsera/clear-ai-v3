@@ -8,7 +8,14 @@ export enum SummaryFormat {
   JSON = 'JSON',
   MARKDOWN = 'MARKDOWN',
   PLAIN_TEXT = 'PLAIN_TEXT',
-  STRUCTURED = 'STRUCTURED'
+  STRUCTURED = 'STRUCTURED',
+  INTELLIGENT = 'INTELLIGENT'
+}
+
+export enum DetailLevel {
+  CONCISE = 'CONCISE',
+  MODERATE = 'MODERATE',
+  DETAILED = 'DETAILED'
 }
 
 export interface SummaryResult {
@@ -42,6 +49,7 @@ export interface SummaryContext {
   analysis_result?: AnalysisResult;
   started_at?: Date;
   completed_at?: Date;
+  detailLevel?: DetailLevel;
 }
 
 export interface SummaryRequest {

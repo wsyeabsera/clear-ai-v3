@@ -1,21 +1,26 @@
 // Summarizer Agent for generating human-readable summaries
 
 import { randomUUID } from 'crypto';
-import { SummaryResult, SummaryFormat, SummaryContext, StructuredSummary } from './types';
+import { SummaryResult, SummaryFormat, SummaryContext, StructuredSummary, DetailLevel } from './types';
 import { ExecutionStorage } from '../executor/storage';
 import { PlanStorage } from '../planner/storage';
 import { AnalyzerStorage } from '../analyzer/storage';
 import { SummarizerStorage } from './storage';
 import OpenAI from 'openai';
+import { Groq } from 'groq-sdk';
 
 export class SummarizerAgent {
   private summarizerStorage: SummarizerStorage;
   private openai: OpenAI;
+  private groq: Groq;
 
   constructor() {
     this.summarizerStorage = new SummarizerStorage();
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || ''
+    });
+    this.groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY || ''
     });
   }
 
@@ -57,7 +62,12 @@ export class SummarizerAgent {
       let structured_data: StructuredSummary | undefined;
 
       if (format === SummaryFormat.STRUCTURED) {
-        structured_data = this.generateStructuredSummary(context);
+        structured_data = await this.generateStructuredSummary(context);
+        content = this.formatStructuredSummary(structured_data);
+      } else if (format === SummaryFormat.INTELLIGENT) {
+        // For INTELLIGENT format, determine detail level and use intelligent answer
+        context.detailLevel = this.determineDetailLevel(context);
+        structured_data = await this.generateStructuredSummary(context);
         content = this.formatStructuredSummary(structured_data);
       } else {
         content = await this.generateLLMSummary(context, format);
@@ -86,7 +96,43 @@ export class SummarizerAgent {
     }
   }
 
-  generateStructuredSummary(context: SummaryContext): StructuredSummary {
+  private determineDetailLevel(context: SummaryContext): DetailLevel {
+    const { execution_results } = context;
+
+    // Count total data items across all successful steps
+    let totalItems = 0;
+    let hasComplexNestedData = false;
+
+    execution_results
+      .filter(result => result.status === 'COMPLETED' && result.result)
+      .forEach(result => {
+        if (Array.isArray(result.result)) {
+          totalItems += result.result.length;
+          // Check for complex nested structures
+          result.result.forEach((item: any) => {
+            if (typeof item === 'object' && item !== null) {
+              const keys = Object.keys(item);
+              if (keys.length > 10) hasComplexNestedData = true;
+            }
+          });
+        } else if (typeof result.result === 'object' && result.result !== null) {
+          totalItems += 1;
+          const keys = Object.keys(result.result);
+          if (keys.length > 15) hasComplexNestedData = true;
+        }
+      });
+
+    // Determine detail level based on complexity
+    if (totalItems <= 5 && !hasComplexNestedData) {
+      return DetailLevel.CONCISE;
+    } else if (totalItems <= 20 && !hasComplexNestedData) {
+      return DetailLevel.MODERATE;
+    } else {
+      return DetailLevel.DETAILED;
+    }
+  }
+
+  async generateStructuredSummary(context: SummaryContext): Promise<StructuredSummary> {
     const { user_query, execution_results, execution_status, execution_time_ms, analysis_result } = context;
     
     const success = execution_status === 'COMPLETED';
@@ -109,7 +155,17 @@ export class SummarizerAgent {
     // Generate answer based on success and results
     let answer: string;
     if (success) {
-      answer = `Successfully completed ${steps_executed} steps. ${key_results.length} operations completed successfully.`;
+      // Check if this is for INTELLIGENT format (indicated by detailLevel being set)
+      if (context.detailLevel !== undefined) {
+        try {
+          answer = await this.generateIntelligentAnswer(context);
+        } catch (error) {
+          console.warn('Failed to generate intelligent answer, falling back to generic:', error);
+          answer = `Successfully completed ${steps_executed} steps. ${key_results.length} operations completed successfully.`;
+        }
+      } else {
+        answer = `Successfully completed ${steps_executed} steps. ${key_results.length} operations completed successfully.`;
+      }
     } else {
       answer = `Execution failed after ${steps_executed} steps. ${errors.length} errors occurred.`;
     }
@@ -161,6 +217,39 @@ export class SummarizerAgent {
     }
 
     return content;
+  }
+
+  private async generateIntelligentAnswer(context: SummaryContext): Promise<string> {
+    try {
+      const detailLevel = this.determineDetailLevel(context);
+      const prompt = this.buildIntelligentSummaryPrompt(context, detailLevel);
+      const response = await this.groq.chat.completions.create({
+        model: process.env.SUMMARIZER_GROQ_MODEL || 'llama-3.1-8b-instant',
+        temperature: parseFloat(process.env.SUMMARIZER_TEMPERATURE || '0.7'),
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that provides intelligent, human-friendly summaries of data query results. Respond naturally and conversationally, focusing on what the user actually wants to know.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from Groq LLM');
+      }
+
+      return content;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Intelligent summary generation failed: ${error.message}`);
+      }
+      throw new Error('Intelligent summary generation failed: Unknown error');
+    }
   }
 
   private async generateLLMSummary(context: SummaryContext, format: SummaryFormat): Promise<string> {
@@ -227,6 +316,81 @@ export class SummarizerAgent {
     }
 
     return prompt;
+  }
+
+  private buildIntelligentSummaryPrompt(context: SummaryContext, detailLevel: DetailLevel): string {
+    const { user_query, execution_results } = context;
+
+    let prompt = `You are a helpful assistant that provides intelligent, human-friendly summaries of data query results.\n\n`;
+    prompt += `User Query: "${user_query}"\n\n`;
+    prompt += `Detail Level Required: ${detailLevel}\n\n`;
+
+    // Add detail level instructions
+    switch (detailLevel) {
+      case DetailLevel.CONCISE:
+        prompt += `Provide a brief, high-level overview with key counts and summary information. Keep it under 100 words.\n\n`;
+        break;
+      case DetailLevel.MODERATE:
+        prompt += `Provide a balanced summary with key highlights and specific examples. Include important details like names, dates, weights, etc. Keep it under 200 words.\n\n`;
+        break;
+      case DetailLevel.DETAILED:
+        prompt += `Provide a comprehensive breakdown with all relevant details, patterns, and insights. Include specific data points, relationships, and analysis. Up to 300 words.\n\n`;
+        break;
+    }
+
+    prompt += `Execution Results:\n`;
+
+    // Extract and format meaningful data from execution results
+    execution_results
+      .filter(result => result.status === 'COMPLETED' && result.result)
+      .forEach((result, index) => {
+        prompt += `\nStep ${index + 1} (${result.tool}):\n`;
+
+        if (Array.isArray(result.result)) {
+          result.result.forEach((item: any, itemIndex: number) => {
+            prompt += `  Item ${itemIndex + 1}:\n`;
+            this.formatDataItem(item, prompt);
+          });
+        } else {
+          this.formatDataItem(result.result, prompt);
+        }
+      });
+
+    prompt += `\n\nPlease provide a natural, conversational summary that answers the user's query in a helpful and informative way. Focus on the most relevant information and present it clearly.`;
+
+    return prompt;
+  }
+
+  private formatDataItem(item: any, prompt: string): void {
+    if (typeof item === 'object' && item !== null) {
+      // Format shipment data
+      if (item.license_plate || item.entry_weight || item.shipment_datetime) {
+        prompt += `    Shipment: ${item.license_plate || 'Unknown plate'}`;
+        if (item.entry_weight) prompt += `, Weight: ${item.entry_weight}kg`;
+        if (item.shipment_datetime) prompt += `, Date: ${new Date(item.shipment_datetime).toLocaleDateString()}`;
+        if (item.source) prompt += `, Source: ${item.source}`;
+        prompt += `\n`;
+      }
+      // Format facility data
+      else if (item.name && (item.address || item.city)) {
+        prompt += `    Facility: ${item.name}`;
+        if (item.address) prompt += `, Address: ${item.address}`;
+        if (item.city) prompt += `, City: ${item.city}`;
+        if (item.country) prompt += `, Country: ${item.country}`;
+        prompt += `\n`;
+      }
+      // Format other structured data
+      else {
+        Object.entries(item).slice(0, 5).forEach(([key, value]) => {
+          prompt += `    ${key}: ${value}\n`;
+        });
+        if (Object.keys(item).length > 5) {
+          prompt += `    ... and ${Object.keys(item).length - 5} more fields\n`;
+        }
+      }
+    } else {
+      prompt += `    ${item}\n`;
+    }
   }
 
   private getSystemPrompt(format: SummaryFormat): string {
