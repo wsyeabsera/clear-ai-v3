@@ -399,6 +399,7 @@ type SummaryFormatCounts {
   MARKDOWN: Int!
   PLAIN_TEXT: Int!
   STRUCTURED: Int!
+  INTELLIGENT: Int!
 }
 
 enum SummaryFormat {
@@ -406,6 +407,7 @@ enum SummaryFormat {
   MARKDOWN
   PLAIN_TEXT
   STRUCTURED
+  INTELLIGENT
 }
 
 # Orchestrator Agent Types

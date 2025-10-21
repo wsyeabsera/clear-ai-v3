@@ -18,6 +18,7 @@ export interface ToolSelectionRequest {
   availableTools: string;
   toolSchemas: Record<string, any>;
   analysisFeedback?: string;
+  failedTools?: string[];
 }
 
 export interface ToolSelectionResponse {
@@ -46,6 +47,7 @@ export interface PlanGenerationRequest {
   requestId: string;
   analysisFeedback?: string;
   historicalContext?: string;
+  failedTools?: string[];
 }
 
 export interface PlanGenerationResponse {
@@ -620,6 +622,17 @@ ${request.availableTools}
 
 ${request.analysisFeedback ? `\nHistorical Context from Past Executions:\n${request.analysisFeedback}\n` : ''}
 
+CRITICAL INSTRUCTIONS:
+- ONLY select tools from the "Available Tools" list above
+- NEVER invent, create, or hallucinate tool names
+- DO NOT use tools that are not explicitly listed
+${request.failedTools && request.failedTools.length > 0 ? `- NEVER use these tools (they failed in past executions): ${request.failedTools.join(', ')}` : ''}
+
+Tool Selection Rules:
+- If a tool doesn't exist for a comparison operation, use multiple retrieval tools instead
+- For "compare X between A and B", use: lookup A, lookup B, retrieve X from A, retrieve X from B
+- The comparison can be done by retrieving data from both sources separately
+
 Select the tools that are most relevant to answering this query. Consider:
 1. What data needs to be retrieved?
 2. What operations need to be performed?
@@ -651,6 +664,13 @@ ${request.analysisFeedback ? `\nAnalysis Feedback from Past Executions:\n${reque
 Tool Schemas:
 ${JSON.stringify(request.toolSchemas, null, 2)}
 
+CRITICAL TOOL USAGE RULES:
+- ONLY use tools from the "Selected Tools" list: ${request.selectedTools.join(', ')}
+- NEVER create, invent, or hallucinate tool names
+- Each step MUST use a tool from the Selected Tools list
+- If you cannot complete the query with available tools, use the closest available tools
+${request.failedTools && request.failedTools.length > 0 ? `- FORBIDDEN TOOLS (known to fail): ${request.failedTools.join(', ')} - DO NOT USE THESE` : ''}
+
 Generate a detailed execution plan with:
 1. Proper parameter resolution (use actual values, not placeholders or text descriptions)
 2. Dependency management between steps (dependsOn must be array of step indices as numbers)
@@ -673,6 +693,14 @@ When the query mentions facility NAMES (not IDs), you MUST:
 
 NEVER generate fake facility IDs like "5f9b3a3a3a3a..."
 ALWAYS use facilities_list to find facilities by name first
+
+COMPARISON QUERY PATTERN (NEW):
+For comparison queries (e.g., "Compare X between facility A and facility B"):
+1. Mark facility lookups as parallel (no dependencies between them)
+2. Use facilities_list to search by name for each facility
+3. Extract facility IDs and use them in subsequent data retrieval steps
+4. Mark data retrieval steps as parallel if they don't depend on each other
+5. Ensure proper variable references using \${step_N.result} format
 
 STEP-BY-STEP EXAMPLES:
 
@@ -709,6 +737,13 @@ Query: "Get shipments from ABC and XYZ facilities"
 Step 0: facilities_list → params: {"page": 1, "limit": 20}
 Step 1: shipments_list → params: {"page": 1, "limit": 100}, dependsOn: [0]
 Note: Filter by facility names in analysis step
+
+Example 7: Comparison Query Pattern (CRITICAL)
+Query: "Compare contaminants found in 'Bosco, Bruen and Wehner Sorting Center' and 'Tremblay Inc Waste Processing Facility'"
+Step 0: facilities_list → params: {"name": "Bosco, Bruen and Wehner Sorting Center", "page": 1, "limit": 1}, parallel: true, dependsOn: []
+Step 1: facilities_list → params: {"name": "Tremblay Inc Waste Processing Facility", "page": 1, "limit": 1}, parallel: true, dependsOn: []
+Step 2: contaminants_list → params: {"facility_id": "\${step_0.result[0]._id}", "page": 1, "limit": 100}, parallel: true, dependsOn: [0]
+Step 3: contaminants_list → params: {"facility_id": "\${step_1.result[0]._id}", "page": 1, "limit": 100}, parallel: true, dependsOn: [1]
 
 Example 7: Single Facility Name
 Query: "Show me all shipments from ABC Facility"

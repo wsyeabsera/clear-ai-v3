@@ -50,16 +50,32 @@ export class ExecutionAgent {
   ): Promise<ExecutionResponse> {
     const executionId = randomUUID();
     const startTime = new Date();
+    const executionTimeout = 5 * 60 * 1000; // 5 minutes default timeout
 
     try {
+      console.log(`🚀 Starting execution ${executionId} for plan ${planRequestId}`);
+
       // Get the plan from storage
       const planRequest = await PlanStorage.getPlanByRequestId(planRequestId);
       if (!planRequest) {
         throw new Error(`Plan not found: ${planRequestId}`);
       }
 
-      // Merge config with defaults
-      const config = { ...this.defaultConfig, ...configInput };
+      // Merge config with defaults and set timeout
+      const config = {
+        ...this.defaultConfig,
+        ...configInput,
+        executionTimeout: configInput?.executionTimeout || executionTimeout
+      };
+
+      console.log(`⚙️  Execution config:`, {
+        maxRetries: config.maxRetries,
+        retryDelayMs: config.retryDelayMs,
+        enableRollback: config.enableRollback,
+        continueOnError: config.continueOnError,
+        parallelExecutionLimit: config.parallelExecutionLimit,
+        executionTimeout: config.executionTimeout
+      });
 
       // Analyze query complexity and set execution strategy
       const selectedTools = planRequest.plan.steps.map(step => step.tool);
@@ -104,12 +120,15 @@ export class ExecutionAgent {
 
       console.log(`Starting execution ${executionId} for plan ${planRequestId}`);
 
-      // Execute the plan
-      const executionResult = await this.executePlanSteps(
-        planRequest.plan.steps,
-        stepResults,
-        context
-      );
+      // Execute the plan with timeout
+      const executionResult = await Promise.race([
+        this.executePlanSteps(planRequest.plan.steps, stepResults, context),
+        new Promise<{ success: boolean; error?: string }>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`Execution timed out after ${config.executionTimeout}ms`));
+          }, config.executionTimeout);
+        })
+      ]);
 
       // Update final status
       const finalStatus = executionResult.success ? ExecutionStatus.COMPLETED : ExecutionStatus.FAILED;
@@ -170,15 +189,54 @@ export class ExecutionAgent {
     stepResults: ExecutionStepResult[],
     context: any
   ): Promise<{ success: boolean; error?: string }> {
+    const startTime = Date.now();
+    const maxExecutionTime = 5 * 60 * 1000; // 5 minutes
+    let iterationCount = 0;
+    let lastProgressTime = Date.now();
+    const progressTimeout = 30000; // 30 seconds without progress = stuck
+
     try {
+      console.log(`🔄 Starting execution of ${steps.length} steps`);
+
       while (!this.orchestrator.isExecutionComplete(steps.length, context)) {
+        iterationCount++;
+        const currentTime = Date.now();
+
+        // Check for overall timeout
+        if (currentTime - startTime > maxExecutionTime) {
+          console.error(`⏰ Execution timed out after ${maxExecutionTime}ms`);
+          throw new Error(`Execution timed out after ${maxExecutionTime}ms`);
+        }
+
+        // Check for deadlock (no progress for too long)
+        if (currentTime - lastProgressTime > progressTimeout) {
+          console.error(`🚫 Execution stuck - no progress for ${progressTimeout}ms`);
+          const pendingCount = stepResults.filter(r => r.status === StepStatus.PENDING).length;
+          const runningCount = stepResults.filter(r => r.status === StepStatus.RUNNING).length;
+          const completedCount = stepResults.filter(r => r.status === StepStatus.COMPLETED).length;
+          const failedCount = stepResults.filter(r => r.status === StepStatus.FAILED).length;
+
+          console.error(`📊 Execution state: ${pendingCount} pending, ${runningCount} running, ${completedCount} completed, ${failedCount} failed`);
+          throw new Error(`Execution stuck - no progress for ${progressTimeout}ms`);
+        }
+
+        console.log(`🔄 Execution iteration ${iterationCount} - checking for ready steps`);
+
         // Get ready steps
         const readySteps = this.orchestrator.getReadySteps(steps, stepResults, context);
+        console.log(`📋 Found ${readySteps.length} ready steps: [${readySteps.join(', ')}]`);
 
         if (readySteps.length === 0) {
           // No ready steps, check if we're stuck
           const pendingSteps = stepResults.filter(r => r.status === StepStatus.PENDING);
+          const runningSteps = stepResults.filter(r => r.status === StepStatus.RUNNING);
+
+          console.log(`⚠️  No ready steps. Pending: ${pendingSteps.length}, Running: ${runningSteps.length}`);
+
           if (pendingSteps.length > 0) {
+            console.error('🚫 Execution stuck: no ready steps but execution not complete');
+            console.error(`Pending steps: [${pendingSteps.map(s => s.stepIndex).join(', ')}]`);
+            console.error(`Running steps: [${runningSteps.map(s => s.stepIndex).join(', ')}]`);
             throw new Error('Execution stuck: no ready steps but execution not complete');
           }
           break;
@@ -186,18 +244,24 @@ export class ExecutionAgent {
 
         // Sort by priority
         const sortedSteps = this.orchestrator.sortStepsByPriority(readySteps, steps);
+        console.log(`📊 Sorted ready steps by priority: [${sortedSteps.join(', ')}]`);
 
         // Get intelligent batches for complex queries
         const strategy = this.orchestrator.getExecutionStrategy();
+        console.log(`🎯 Execution strategy: ${strategy?.strategy || 'default'}`);
+
         if (strategy?.strategy === 'complex' || strategy?.strategy === 'batched') {
           const batches = this.orchestrator.getIntelligentBatches(sortedSteps, steps, context);
+          console.log(`📦 Executing ${batches.length} intelligent batches`);
 
           for (const batch of batches) {
             if (batch.length > 1) {
               // Execute batch in parallel
+              console.log(`🔄 Executing batch of ${batch.length} steps in parallel: [${batch.join(', ')}]`);
               await this.executeBatchSteps(batch, steps, stepResults, context);
             } else {
               // Execute single step
+              console.log(`🔄 Executing single step: ${batch[0]}`);
               await this.executeSingleStep(batch[0], steps, stepResults, context);
             }
           }
@@ -205,29 +269,58 @@ export class ExecutionAgent {
           // Execute parallel steps first
           const parallelSteps = this.orchestrator.getParallelSteps(sortedSteps, steps, context);
           if (parallelSteps.length > 0) {
+            console.log(`🔄 Executing ${parallelSteps.length} parallel steps: [${parallelSteps.join(', ')}]`);
             await this.executeParallelSteps(parallelSteps, steps, stepResults, context);
           }
 
           // Execute sequential steps
           const sequentialSteps = this.orchestrator.getSequentialSteps(sortedSteps, steps, context);
-          for (const stepIndex of sequentialSteps) {
-            await this.executeSingleStep(stepIndex, steps, stepResults, context);
+          if (sequentialSteps.length > 0) {
+            console.log(`🔄 Executing ${sequentialSteps.length} sequential steps: [${sequentialSteps.join(', ')}]`);
+            for (const stepIndex of sequentialSteps) {
+              await this.executeSingleStep(stepIndex, steps, stepResults, context);
+            }
           }
         }
+
+        // Update progress time if we made progress
+        const currentCompleted = stepResults.filter(r => r.status === StepStatus.COMPLETED).length;
+        const currentFailed = stepResults.filter(r => r.status === StepStatus.FAILED).length;
+        console.log(`📈 Progress: ${currentCompleted} completed, ${currentFailed} failed, ${steps.length - currentCompleted - currentFailed} remaining`);
+
+        // Validate DB-memory state synchronization every few iterations
+        if (iterationCount % 3 === 0) {
+          const validation = await ExecutionStorage.validateExecutionState(context.executionId, context);
+          if (!validation.isValid) {
+            console.warn(`⚠️  State validation failed: ${validation.mismatches.join(', ')}`);
+            // Try to sync with DB
+            await ExecutionStorage.refreshExecutionFromDB(context.executionId, context);
+          }
+        }
+
+        // Update last progress time if we completed any steps
+        if (currentCompleted + currentFailed > (context.completedSteps?.size || 0) + (context.failedSteps?.size || 0)) {
+          lastProgressTime = currentTime;
+        }
       }
+
+      console.log(`✅ Execution loop completed after ${iterationCount} iterations`);
 
       // Check if execution was successful
       const failedSteps = stepResults.filter(r => r.status === StepStatus.FAILED);
       const success = failedSteps.length === 0 || context.config.continueOnError;
 
+      console.log(`📊 Final execution state: ${success ? 'SUCCESS' : 'FAILED'}, ${failedSteps.length} failed steps`);
+
       if (!success && context.config.enableRollback) {
-        console.log('Execution failed, attempting rollback...');
+        console.log('🔄 Execution failed, attempting rollback...');
         await this.performRollback(stepResults, context);
       }
 
       return { success };
 
     } catch (error) {
+      console.error(`💥 Execution failed after ${iterationCount} iterations:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -244,11 +337,32 @@ export class ExecutionAgent {
     stepResults: ExecutionStepResult[],
     context: any
   ): Promise<void> {
-    const promises = stepIndices.map(stepIndex =>
-      this.executeSingleStep(stepIndex, steps, stepResults, context)
-    );
+    console.log(`🔄 Starting parallel execution of ${stepIndices.length} steps: [${stepIndices.join(', ')}]`);
 
-    await Promise.all(promises);
+    const promises = stepIndices.map(async (stepIndex) => {
+      try {
+        await this.executeSingleStep(stepIndex, steps, stepResults, context);
+        console.log(`✅ Parallel step ${stepIndex} completed successfully`);
+      } catch (error) {
+        console.error(`❌ Parallel step ${stepIndex} failed:`, error);
+        // Don't re-throw here - let the step result handle the error state
+        // The executeSingleStep method already updates the step result status
+      }
+    });
+
+    const results = await Promise.allSettled(promises);
+
+    // Log results of parallel execution
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    console.log(`📊 Parallel execution completed: ${successful} successful, ${failed} failed`);
+
+    // Log any rejected promises
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`❌ Step ${stepIndices[index]} was rejected:`, result.reason);
+      }
+    });
   }
 
   /**
@@ -260,13 +374,31 @@ export class ExecutionAgent {
     stepResults: ExecutionStepResult[],
     context: any
   ): Promise<void> {
-    console.log(`🔄 Executing batch of ${stepIndices.length} steps: ${stepIndices.join(', ')}`);
+    console.log(`🔄 Executing batch of ${stepIndices.length} steps: [${stepIndices.join(', ')}]`);
 
-    const promises = stepIndices.map(stepIndex =>
-      this.executeSingleStep(stepIndex, steps, stepResults, context)
-    );
+    const promises = stepIndices.map(async (stepIndex) => {
+      try {
+        await this.executeSingleStep(stepIndex, steps, stepResults, context);
+        console.log(`✅ Batch step ${stepIndex} completed successfully`);
+      } catch (error) {
+        console.error(`❌ Batch step ${stepIndex} failed:`, error);
+        // Don't re-throw here - let the step result handle the error state
+      }
+    });
 
-    await Promise.all(promises);
+    const results = await Promise.allSettled(promises);
+
+    // Log results of batch execution
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    console.log(`📊 Batch execution completed: ${successful} successful, ${failed} failed`);
+
+    // Log any rejected promises
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`❌ Batch step ${stepIndices[index]} was rejected:`, result.reason);
+      }
+    });
   }
 
   /**
@@ -335,16 +467,30 @@ export class ExecutionAgent {
         throw error;
       }
     } finally {
-      // Update context and storage
-      this.orchestrator.updateContextAfterStep(context, stepIndex, stepResult.status);
-      await ExecutionStorage.updateStepResult(context.executionId, stepIndex, stepResult);
+      // Update context and storage with proper synchronization
+      try {
+        console.log(`🔄 Updating context for step ${stepIndex} with status: ${stepResult.status}`);
 
-      // Update progress
-      await ExecutionStorage.updateExecutionProgress(
-        context.executionId,
-        context.completedSteps.size,
-        context.failedSteps.size
-      );
+        // Update context first (in-memory state)
+        this.orchestrator.updateContextAfterStep(context, stepIndex, stepResult.status);
+
+        // Then update database
+        await ExecutionStorage.updateStepResult(context.executionId, stepIndex, stepResult);
+
+        // Update progress with current context state
+        const completedCount = context.completedSteps?.size || 0;
+        const failedCount = context.failedSteps?.size || 0;
+        await ExecutionStorage.updateExecutionProgress(
+          context.executionId,
+          completedCount,
+          failedCount
+        );
+
+        console.log(`✅ Context updated for step ${stepIndex}. Completed: ${completedCount}, Failed: ${failedCount}`);
+      } catch (updateError) {
+        console.error(`❌ Failed to update context for step ${stepIndex}:`, updateError);
+        // Don't throw here - the step execution itself was successful
+      }
     }
   }
 

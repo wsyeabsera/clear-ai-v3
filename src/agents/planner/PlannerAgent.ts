@@ -18,6 +18,7 @@ import { AnalyzerMemoryEntry } from '../memory/types';
 import { DataAssessmentService } from './data-assessment';
 import { QueryRealismValidator } from './query-realism-validator';
 import { SmartFilterGenerator } from './smart-filter-generator';
+import { logger } from '../../helpers/logger';
 
 export class PlannerAgent {
   private tools: MCPTool[];
@@ -65,6 +66,7 @@ export class PlannerAgent {
 
       // Step 1.5: Get analysis feedback from past executions
       const analysisFeedback = await this.getAnalysisFeedback(query);
+      logger.info(`📚 Analysis feedback: ${analysisFeedback}`);
       if (analysisFeedback) {
         console.log(`📚 Retrieved analysis feedback from past executions`);
       }
@@ -86,6 +88,16 @@ export class PlannerAgent {
       // Step 2: Generate plan using LLM
       const planGeneration = await this.generatePlanWithLLM(query, toolSelection, requestId, provider, analysisFeedback);
       console.log(`📋 Generated plan with ${planGeneration.plan.steps.length} steps`);
+
+      // Step 2.1: Validate generated plan tools
+      const availableToolNames = this.tools.map(tool => tool.name);
+      const failedTools = this.extractFailedToolsFromFeedback(analysisFeedback || '');
+      const toolValidation = this.validateGeneratedPlanTools(planGeneration.plan, availableToolNames, failedTools);
+
+      if (!toolValidation.isValid) {
+        console.warn(`⚠️  Plan contains invalid tools in steps: ${toolValidation.invalidSteps.join(', ')}`);
+        // Continue with the plan but log the issues
+      }
 
       // Step 2.5: Enhance plan with data-aware optimizations
       const enhancedPlan = await this.enhancePlanWithDataAwareness(planGeneration.plan, query, dataAssessment);
@@ -324,6 +336,29 @@ export class PlannerAgent {
   }
 
   /**
+   * Extract failed tool names from analysis feedback
+   */
+  private extractFailedToolsFromFeedback(analysisFeedback: string): string[] {
+    if (!analysisFeedback) return [];
+
+    const failedTools = new Set<string>();
+    const patterns = [
+      /Command '([^']+)' not found/g,
+      /Tool '([^']+)' not found/g,
+      /Failed to execute tool ([^\s:]+)/g
+    ];
+
+    for (const pattern of patterns) {
+      const matches = analysisFeedback.matchAll(pattern);
+      for (const match of matches) {
+        failedTools.add(match[1]);
+      }
+    }
+
+    return Array.from(failedTools);
+  }
+
+  /**
    * Select tools using LLM intelligence
    */
   private async selectToolsWithLLM(query: string, provider: string = 'groq', analysisFeedback?: string) {
@@ -340,6 +375,8 @@ export class PlannerAgent {
    * Multi-stage tool selection for Groq (Stage 1: Categories, Stage 2: Tools)
    */
   private async selectToolsWithGroqMultiStage(query: string, analysisFeedback?: string) {
+    const failedTools = this.extractFailedToolsFromFeedback(analysisFeedback || '');
+
     // Stage 1: Category selection
     const categoryMetadata = ToolAdapter.getCategoryMetadata();
     const categorySelection = await this.groqService.selectCategories({
@@ -368,7 +405,8 @@ export class PlannerAgent {
       query,
       availableTools: compressedTools,
       toolSchemas,
-      analysisFeedback
+      analysisFeedback,
+      failedTools
     });
   }
 
@@ -376,6 +414,8 @@ export class PlannerAgent {
    * Single-stage tool selection for OpenAI
    */
   private async selectToolsWithOpenAISingleStage(query: string, analysisFeedback?: string) {
+    const failedTools = this.extractFailedToolsFromFeedback(analysisFeedback || '');
+
     const toolSchemas = this.tools.reduce((acc, tool) => {
       acc[tool.name] = tool.inputSchema;
       return acc;
@@ -393,7 +433,8 @@ export class PlannerAgent {
       query,
       availableTools: availableToolsDescription,
       toolSchemas,
-      analysisFeedback
+      analysisFeedback,
+      failedTools
     });
   }
 
@@ -401,6 +442,8 @@ export class PlannerAgent {
    * Generate plan using LLM intelligence
    */
   private async generatePlanWithLLM(query: string, toolSelection: any, requestId: string, provider: string = 'groq', analysisFeedback?: string) {
+    const failedTools = this.extractFailedToolsFromFeedback(analysisFeedback || '');
+
     if (provider === 'groq') {
       // For Groq, we need to get the filtered tools that were used in tool selection
       // We'll need to reconstruct the filtered tools based on the selected tools
@@ -416,7 +459,8 @@ export class PlannerAgent {
         selectedTools: toolSelection.tools,
         toolSchemas,
         requestId,
-        analysisFeedback
+        analysisFeedback,
+        failedTools
       });
     } else {
       // For OpenAI, use all tools as before
@@ -431,7 +475,8 @@ export class PlannerAgent {
         toolSchemas,
         entities: toolSelection.entities,
         requestId,
-        analysisFeedback
+        analysisFeedback,
+        failedTools
       };
 
       return await this.openaiService.generatePlan(request);
@@ -1007,6 +1052,33 @@ export class PlannerAgent {
       console.error('Smart filter generation failed:', error);
       return null;
     }
+  }
+
+  /**
+   * Validate that generated plan only uses available tools
+   */
+  private validateGeneratedPlanTools(
+    plan: Plan,
+    availableTools: string[],
+    failedTools: string[]
+  ): { isValid: boolean; invalidSteps: number[] } {
+    const invalidSteps: number[] = [];
+
+    plan.steps.forEach((step, index) => {
+      if (!availableTools.includes(step.tool)) {
+        console.error(`❌ Step ${index}: Invalid tool '${step.tool}' not in available tools`);
+        invalidSteps.push(index);
+      }
+      if (failedTools.includes(step.tool)) {
+        console.warn(`⚠️  Step ${index}: Tool '${step.tool}' is known to fail from feedback`);
+        invalidSteps.push(index);
+      }
+    });
+
+    return {
+      isValid: invalidSteps.length === 0,
+      invalidSteps
+    };
   }
 
   /**
